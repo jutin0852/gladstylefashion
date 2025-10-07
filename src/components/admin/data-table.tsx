@@ -33,6 +33,8 @@ import {
   IconLoader,
   IconPlus,
   IconTrendingUp,
+  IconTruck,
+  IconTruckDelivery,
 } from "@tabler/icons-react";
 import {
   ColumnDef,
@@ -103,12 +105,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const schema = z.object({
   id: z.number(),
-  header: z.string(),
+  orderId: z.string(),
   type: z.string(),
   status: z.string(),
   target: z.string(),
   limit: z.string(),
   reviewer: z.string(),
+  products: z.string(),
+  date: z.date(),
+  payment: z.string(),
+  price: z.string(),
 });
 
 // Create a separate component for the drag handle
@@ -164,38 +170,26 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "header",
-    header: "Header",
+    accessorKey: "orderId",
+    header: "Order Id",
     cell: ({ row }) => {
       return <TableCellViewer item={row.original} />;
     },
     enableHiding: false,
   },
   {
-    accessorKey: "type",
-    header: "Section Type",
+    accessorKey: "product",
+    header: "Product",
     cell: ({ row }) => (
       <div className="w-32">
-        <Badge variant="outline" className="text-muted-foreground px-1.5">
-          {row.original.type}
-        </Badge>
+        {row.original.products}
+        {/* <Badge variant="outline" className="text-muted-foreground px-1.5">
+          // {row.original.type}
+        </Badge> */}
       </div>
     ),
   },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="text-muted-foreground px-1.5">
-        {row.original.status === "Done" ? (
-          <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-        ) : (
-          <IconLoader />
-        )}
-        {row.original.status}
-      </Badge>
-    ),
-  },
+
   {
     accessorKey: "target",
     header: () => <div className="w-full text-right">Target</div>,
@@ -204,7 +198,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         onSubmit={(e) => {
           e.preventDefault();
           toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.header}`,
+            loading: `Saving ${row.original}`,
             success: "Done",
             error: "Error",
           });
@@ -229,7 +223,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         onSubmit={(e) => {
           e.preventDefault();
           toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.header}`,
+            loading: `Saving ${row.original}`,
             success: "Done",
             error: "Error",
           });
@@ -304,6 +298,22 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
       </DropdownMenu>
     ),
   },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => (
+      <Badge variant="outline" className="text-muted-foreground px-1.5">
+        {row.original.status === "Delivered" ? (
+          <IconTruckDelivery className="fill-green-500 dark:fill-green-400" />
+        ) : row.original.status === "pending" ? (
+          <IconTruck size={7} className="fill-yellow-300 " />
+        ) : (
+          <IconTruck />
+        )}
+        {row.original.status}
+      </Badge>
+    ),
+  },
 ];
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
@@ -331,6 +341,7 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   );
 }
 
+// data table
 export function DataTable({
   data: initialData,
 }: {
