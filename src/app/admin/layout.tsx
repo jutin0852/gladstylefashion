@@ -5,7 +5,6 @@ import { AppSidebar } from "@/components/admin/admin-sidebar";
 // import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
-import data from "./data.json";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { cookies } from "next/headers";
 

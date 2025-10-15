@@ -4,6 +4,7 @@ import { SectionCards } from '@/components/admin/section-cards';
 import React from 'react'
 import data from '@/app/admin/data.json';
 import { cardData } from '@/data/mockdata';
+import { productOrderColumns } from '@/data/tableColumnData';
 
 export default function Dashboard() {
   return (
@@ -11,7 +12,7 @@ export default function Dashboard() {
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <SectionCards cardData={cardData} />
         <div className="px-4 lg:px-6"><ChartAreaInteractive /></div>
-        <DataTable data={data} />
+        <DataTable data={data} columns={productOrderColumns} />
       </div>
     </div>
   );

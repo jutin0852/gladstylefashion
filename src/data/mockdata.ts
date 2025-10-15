@@ -19,3 +19,32 @@ export const cardData: CardData[] = [
     trend: "down",
   },
 ];
+
+export const cardDataCustomers: CardData[] = [
+  {
+    description: "Total Customers",
+    title: "$1,250.00",
+    action: "+12.5%",
+    footerMain: "Trending up this month",
+    footerSub: "Visitors for the last 6 months",
+    trend: "up",
+  },
+  {
+    description: "New Customers",
+    title: "1,234",
+    action: "-20%",
+    footerMain: "Down 20% this period",
+    footerSub: "Acquisition needs attention",
+    trend: "down",
+  },
+  {
+    description: "Visitors",
+    title: "1,234",
+    action: "-20%",
+    footerMain: "Down 20% this period",
+    footerSub: "Acquisition needs attention",
+    trend: "down",
+  },
+];
+
+

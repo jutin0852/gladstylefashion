@@ -5,6 +5,7 @@ import { cardData } from "@/data/mockdata";
 import { IconCirclePlus } from "@tabler/icons-react";
 import React from "react";
 import data from "../data.json";
+import { productOrderColumns} from "@/data/tableColumnData";
 
 export default function page() {
   return (
@@ -18,9 +19,10 @@ export default function page() {
 
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <SectionCards cardData={cardData} />
-        <DataTable data={data} />
+        <DataTable data={data} columns={productOrderColumns} />
       </div>
       
     </div>
   );
 }
+
