@@ -117,7 +117,7 @@ export const adminNav = {
   documents: [
     {
       name: "Add Products",
-      url: "#",
+      url: "/admin/add-product",
       icon: IconCirclePlus,
     },
     {
