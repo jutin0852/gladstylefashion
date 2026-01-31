@@ -1,13 +1,10 @@
-import SignOutButton from "@/components/auth/signOut";
-import { getCurrentUser } from "@/lib/admin-auth";
+import SignOutButton from "../components/auth/signOut";
 
-export default async function Home() {
-  const userSession = await getCurrentUser();
-
+export default function Home() {
   return (
     <>
       WELCOME
-      <div>{userSession && <SignOutButton />}</div>
+      <SignOutButton />
     </>
   );
 }

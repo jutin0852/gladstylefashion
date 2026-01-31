@@ -127,7 +127,7 @@ export const adminNav = {
     },
     {
       name: "Product List",
-      url: "#",
+      url: "/admin/product-list",
       icon: IconPackages,
     },
     {

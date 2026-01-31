@@ -46,7 +46,7 @@ export default function LoginPage() {
       }
 
       alert("Success! Check the console for details.");
-      router.push("/"); // Redirect after successful auth
+      router.push("/admin"); // Redirect after successful auth
     } catch (error) {
       console.error("Auth error:", error);
       alert(`Authentication failed: ${error}`);

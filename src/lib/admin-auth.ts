@@ -21,7 +21,6 @@ export async function getCurrentUser() {
 
   if (userData.length === 0) return null;
   console.log("current user data:", session.user, userData[0]);
-
   return userData[0];
 }
 
