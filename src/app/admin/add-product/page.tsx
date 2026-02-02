@@ -1,6 +1,6 @@
 "use client";
 import { ProductSchema } from "@/types/admin/admin";
-import React from "react";
+import React, { useEffect } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
@@ -16,6 +16,8 @@ import {
   FieldLabel,
 } from "../../../components/ui/field";
 import { Button } from "../../../components/ui/button";
+import { handlecloudinaryUpload, uploadToCloudinary } from "../../../lib/cloudinary";
+import { createProduct } from "../../actions/products";
 
 type product = z.infer<typeof ProductSchema>;
 
@@ -32,20 +34,53 @@ export default function AddProduct() {
       description: "",
       price: 0,
       costPrice: 0,
-      images: [],
     },
   });
 
-  const onFormSubmit = (data: product) => {
-    console.log("Form Data:", data);
+  const onFormSubmit = async (data: product, image: File | File[]) => {
+    const formData = new FormData();
+
+    // Add object fields
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, String(value)); // numbers must be converted
+      }
+    });
+    const productImages = await handlecloudinaryUpload(image);
+    productImages.map((image) => formData.append("images", image));
+    console.log(formData);
+
     console.log("submitted");
+    await createProduct(formData);
   };
 
+  useEffect(() => {
+    return () => {
+      previews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previews]);
+
+  const fileKey = (file: File): string =>
+    `${file.name}-${file.size}-${file.lastModified}`;
+
   const handleImages = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files ? Array.from(e.target.files) : [];
-    const newFiles = [...images, ...files].slice(0, 5); // limit to 5 images
+    const file = Array.from(e.target.files ?? []);
+    if (!file.length) return;
+
+    const added = new Set<string>();
+    const uniqueFiles = [...images, ...file].filter((file) => {
+      const key = fileKey(file);
+      if (added.has(key)) {
+        return false;
+      }
+      added.add(key);
+      return true;
+    });
+    console.log("added", added);
+    console.log(uniqueFiles, "unique files");
+
+    const newFiles = uniqueFiles.slice(0, 5); // limit to 5 images
     setImages(newFiles);
-    if (!files) return;
     const urls = newFiles.map((file) => URL.createObjectURL(file));
     setPreviews(urls);
   };
@@ -72,7 +107,10 @@ export default function AddProduct() {
 
   return (
     <section className="">
-      <form onSubmit={form.handleSubmit(onFormSubmit)} id="add-product-form">
+      <form
+        onSubmit={form.handleSubmit((data) => onFormSubmit(data, images))}
+        id="add-product-form"
+      >
         <FieldGroup className="flex flex-row ">
           <section>
             <Controller
@@ -273,25 +311,23 @@ export default function AddProduct() {
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="">Product Images</FieldLabel>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      handleImages(e);
-                      field.onChange(e); // keep RHF in sync
-                    }}
-                    ref={(el) => {
-                      field.ref(el); //keep RHF ref
-                      fileInputRef.current = el; // keep your custom ref
-                    }}
-                  />
 
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
                   )}
                 </Field>
               )}
+            />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                handleImages(e);
+              }}
+              ref={(el) => {
+                fileInputRef.current = el; // keep your custom ref
+              }}
             />
             <input type="file" hidden ref={fileReplaceRef} />
           </section>
@@ -303,6 +339,9 @@ export default function AddProduct() {
         </Button>
         <Button type="submit" form="add-product-form">
           Submit
+        </Button>
+        <Button type="button" onClick={() => handlecloudinaryUpload(images)}>
+          Upload
         </Button>
       </Field>
     </section>
