@@ -95,7 +95,7 @@ export const products = pgTable("products", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  name: text("name").notNull(),
+  productName: text("ProductName").notNull(),
   slug: text("slug").notNull().unique(),
   description: text("description"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
@@ -103,7 +103,7 @@ export const products = pgTable("products", {
   categoryId: text("category_id").references(() => categories.id),
   inventoryCount: integer("inventory_count").default(0),
   sku: text("sku").unique(),
-  images: jsonb("images").$type<string[]>().default([]),
+  images: jsonb("images").$type<string[]>().default([]).notNull(),
   isActive: boolean("is_active").default(true),
   featured: boolean("featured").default(false),
   sizes: jsonb("sizes").$type<string[]>().default([]), // ["XS", "S", "M", "L", "XL"]
@@ -208,7 +208,6 @@ export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type NewOrderItem = typeof orderItems.$inferInsert;
-
 
 export type Session = typeof session.$inferSelect;
 export type NewSession = typeof session.$inferInsert;

@@ -1,5 +1,4 @@
 "use client";
-import { ProductSchema } from "@/types/admin/admin";
 import React, { useEffect } from "react";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,10 +15,13 @@ import {
   FieldLabel,
 } from "../../../components/ui/field";
 import { Button } from "../../../components/ui/button";
-import { handlecloudinaryUpload, uploadToCloudinary } from "../../../lib/cloudinary";
+import { handlecloudinaryUpload } from "../../../lib/cloudinary";
 import { createProduct } from "../../actions/products";
+import { ImageFilesSchema, ProductSchema } from "../../../types/admin/admin";
+import { toast } from "sonner";
+import { Spinner } from "../../../components/ui/spinner";
 
-type product = z.infer<typeof ProductSchema>;
+type ProductFormValues = z.infer<typeof ProductSchema>;
 
 export default function AddProduct() {
   const [previews, setPreviews] = React.useState<string[]>([]);
@@ -27,17 +29,36 @@ export default function AddProduct() {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const fileReplaceRef = React.useRef<HTMLInputElement | null>(null);
 
-  const form = useForm<product>({
+  const form = useForm<ProductFormValues>({
     resolver: zodResolver(ProductSchema),
     defaultValues: {
       productName: "",
       description: "",
       price: 0,
       costPrice: 0,
+      inventoryCount: 0,
+      isActive: true,
+      featured: false,
     },
   });
+  const isSubmitting = form.formState.isSubmitting;
 
-  const onFormSubmit = async (data: product, image: File | File[]) => {
+  const onFormSubmit = async (
+    data: ProductFormValues,
+    image: File | File[],
+  ) => {
+    if (isSubmitting) return;
+    const fileValidation = ImageFilesSchema.safeParse(images);
+    console.log(fileValidation.success, fileValidation.error);
+
+    if (!fileValidation.success) {
+      form.setError("images", {
+        type: "manual",
+        message: fileValidation.error.issues[0].message,
+      });
+      return;
+    }
+
     const formData = new FormData();
 
     // Add object fields
@@ -48,10 +69,12 @@ export default function AddProduct() {
     });
     const productImages = await handlecloudinaryUpload(image);
     productImages.map((image) => formData.append("images", image));
-    console.log(formData);
+    const res = await createProduct(formData);
 
-    console.log("submitted");
-    await createProduct(formData);
+    if (!res.success) {
+      toast.error("Failed to add product");
+    }
+    toast.success(res.message);
   };
 
   useEffect(() => {
@@ -83,6 +106,7 @@ export default function AddProduct() {
     setImages(newFiles);
     const urls = newFiles.map((file) => URL.createObjectURL(file));
     setPreviews(urls);
+    form.clearErrors("images");
   };
 
   const removeImage = (index: number) => {
@@ -110,9 +134,11 @@ export default function AddProduct() {
       <form
         onSubmit={form.handleSubmit((data) => onFormSubmit(data, images))}
         id="add-product-form"
+        className="my-5"
       >
-        <FieldGroup className="flex flex-row ">
-          <section>
+        <FieldGroup className="md:flex md:flex-row px-5">
+          <section className=" shadow p-6 w-full flex flex-col gap-4 rounded">
+            <h2 className="text-xl font-semibold">Basic Details</h2>
             <Controller
               name="productName"
               control={form.control}
@@ -162,6 +188,11 @@ export default function AddProduct() {
                   <Input
                     {...field}
                     id="price"
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value ? parseFloat(e.target.value) : undefined,
+                      )
+                    }
                     aria-invalid={fieldState.invalid}
                     placeholder="Enter product price"
                     autoComplete="off"
@@ -185,6 +216,11 @@ export default function AddProduct() {
                     aria-invalid={fieldState.invalid}
                     placeholder="Enter cost price"
                     autoComplete="off"
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value ? parseFloat(e.target.value) : undefined,
+                      )
+                    }
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
@@ -193,7 +229,7 @@ export default function AddProduct() {
               )}
             />
 
-            <Controller
+            {/* <Controller
               name="price"
               control={form.control}
               render={({ field, fieldState }) => (
@@ -210,11 +246,11 @@ export default function AddProduct() {
                     <FieldError errors={[fieldState.error]} />
                   )}
                 </Field>
-              )}
-            />
+              )} */}
+            {/* /> */}
             {/* expiration date for discounted prices */}
 
-            <h2>stock quantity</h2>
+            {/* <h2>stock quantity</h2> */}
             {/* change to stock quantity */}
             <Controller
               name="inventoryCount"
@@ -227,6 +263,11 @@ export default function AddProduct() {
                   <Input
                     {...field}
                     id="inventoryCount"
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value ? parseFloat(e.target.value) : undefined,
+                      )
+                    }
                     aria-invalid={fieldState.invalid}
                     placeholder="Enter inventory count"
                     autoComplete="off"
@@ -238,10 +279,45 @@ export default function AddProduct() {
               )}
             />
             {/* add inventory count */}
+
+            <Field orientation="horizontal" className="my-5">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  form.reset();
+                  toast.success("Form has been reset", {
+                    position: "bottom-center",
+                  });
+                }}
+              >
+                Reset
+              </Button>
+              <Button
+                type="submit"
+                form="add-product-form"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <span className="flex flex-nowrap gap-2">
+                    <Spinner className="self-center"/>
+                    Adding Product..
+                  </span>
+                ) : (
+                  <span>Add Product</span>
+                )}
+              </Button>
+              {/* <Button
+                type="button"
+                onClick={() => handlecloudinaryUpload(images)}
+              >
+                Upload
+              </Button> */}
+            </Field>
           </section>
 
-          <section>
-            <h2 className="font-semibold text-xl">Upload Product Image</h2>
+          <section className=" shadow px-6 pb-6 w-full rounded ">
+            <h2 className="font-semibold text-xl my-5">Upload Product Image</h2>
             {/* preview section */}
             {previews.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
@@ -305,19 +381,12 @@ export default function AddProduct() {
                 Add Image ({images.length}/5)
               </button>
             )}
-            <Controller
-              control={form.control}
-              name="images"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="">Product Images</FieldLabel>
+            {form.formState.errors.images && (
+              <p className="text-sm text-red-500">
+                {form.formState.errors.images.message}
+              </p>
+            )}
 
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
             <input
               type="file"
               accept="image/*"
@@ -326,24 +395,14 @@ export default function AddProduct() {
                 handleImages(e);
               }}
               ref={(el) => {
-                fileInputRef.current = el; // keep your custom ref
+                fileInputRef.current = el;
               }}
             />
+
             <input type="file" hidden ref={fileReplaceRef} />
           </section>
         </FieldGroup>
       </form>
-      <Field orientation="horizontal">
-        <Button type="button" variant="outline" onClick={() => form.reset()}>
-          Reset
-        </Button>
-        <Button type="submit" form="add-product-form">
-          Submit
-        </Button>
-        <Button type="button" onClick={() => handlecloudinaryUpload(images)}>
-          Upload
-        </Button>
-      </Field>
     </section>
   );
 }

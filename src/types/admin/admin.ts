@@ -8,7 +8,7 @@ export const ProductSchema = z.object({
   categoryId: z.string().optional(),
   inventoryCount: z.number().min(0).optional(),
   sku: z.string().optional(),
-  images: z.array(z.string().url()).optional(),
+  images: z.array(z.string().url()).min(1, "At least one image is required").optional(),
   isActive: z.boolean().default(true).optional(),
   featured: z.boolean().default(false).optional(),
   sizes: z.array(z.string()).optional(), // ["XS", "S", "M", "L", "XL"]
@@ -16,13 +16,20 @@ export const ProductSchema = z.object({
   careInstructions: z.string().optional(),
 });
 
-const MAX_FILE_SIZE = 5000000; // 5MB
-const ACCEPTED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/webp",
-];
+const ImageFileSchema = z
+  .instanceof(File)
+  .refine((file) => file.type.startsWith("image/"), {
+    message: "Only image files are allowed",
+  })
+  .refine((file) => file.size <= 5 * 1024 * 1024, {
+    message: "Image must be under 5MB",
+  });
+
+
+export const ImageFilesSchema = z
+  .array(ImageFileSchema)
+  .min(1, "At least one image is required")
+  .max(5, "You can upload up to 5 images");
 
 // export const ProductSchema = z.object({
 //   productName: z

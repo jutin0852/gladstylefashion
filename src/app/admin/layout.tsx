@@ -7,13 +7,18 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import { AdminHeader } from "@/components/admin/admin-header";
 import { cookies } from "next/headers";
+import { Toaster } from "../../components/ui/sonner";
 
-export default async function Page({ children }: { children: React.ReactNode }) {
+export default async function Page({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
   return (
     <SidebarProvider
-    defaultOpen={defaultOpen}
+      defaultOpen={defaultOpen}
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -25,6 +30,7 @@ export default async function Page({ children }: { children: React.ReactNode }) 
       <SidebarInset>
         <AdminHeader />
         <div className="flex flex-1 flex-col">{children}</div>
+        <Toaster />
       </SidebarInset>
     </SidebarProvider>
   );

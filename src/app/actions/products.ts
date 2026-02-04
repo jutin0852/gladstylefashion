@@ -2,84 +2,75 @@
 "use server";
 
 import { ProductSchema } from "@/types/admin/admin";
-import { revalidatePath } from "next/cache";
+import { products } from "../../lib/schema";
+import { db } from "../../lib/db";
+// import { revalidatePath } from "next/cache";
+
+type NewProduct = typeof products.$inferInsert;
 
 export async function createProduct(formData: FormData) {
   console.log(formData, "yess");
 
-  // Get all images from FormData
-  //   const images = formData.getAll("images");
+  const images = formData.getAll("images");
 
-  //   const validatedFields = ProductSchema.safeParse({
-  //     productName: formData.get("productName"),
-  //     description: formData.get("description"),
-  //     price: Number(formData.get("price")),
-  //     costPrice: formData.get("costPrice")
-  //       ? Number(formData.get("costPrice"))
-  //       : undefined,
-  //     inventoryCount: Number(formData.get("inventoryCount")),
-  //     images,
-  //   });
+  const validatedProductFields = ProductSchema.safeParse({
+    productName: formData.get("productName"),
+    description: formData.get("description"),
+    price: Number(formData.get("price")),
+    costPrice: formData.get("costPrice")
+      ? Number(formData.get("costPrice"))
+      : undefined,
+    inventoryCount: Number(formData.get("inventoryCount")),
+    images,
+  });
 
-  //   if (!validatedFields.success) {
-  //     return {
-  //       errors: validatedFields.error.flatten().fieldErrors,
-  //       message: "Validation failed",
-  //     };
-  //   }
+  if (!validatedProductFields.success) {
+    return {
+      errors: validatedProductFields.error.flatten().fieldErrors,
+      message: "Validation failed",
+    };
+  }
+  console.log(validatedProductFields.data, "validated ");
 
-  //   const {
-  //     productName,
-  //     description,
-  //     price,
-  //     costPrice,
-  //     inventoryCount,
-  //     images: validatedImages,
-  //   } = validatedFields.data;
+  const dbData = {
+    productName: validatedProductFields.data.productName, // Map productName to name
+    slug: validatedProductFields.data.productName
+      .toLowerCase()
+      .replace(/\s+/g, "-"), // Generate slug
+    description: validatedProductFields.data.description ?? null,
+    price: validatedProductFields.data.price.toString(), // Convert number to string
+    costPrice: validatedProductFields.data.costPrice?.toString() ?? null,
+    inventoryCount: validatedProductFields.data.inventoryCount ?? null,
+    categoryId: validatedProductFields.data.categoryId ?? null,
+    sku: validatedProductFields.data.sku ?? null,
+    images: validatedProductFields.data.images ?? [],
+    isActive: validatedProductFields.data.isActive,
+    featured: validatedProductFields.data.featured,
+    sizes: validatedProductFields.data.sizes ?? [],
+    materials: validatedProductFields.data.materials ?? null,
+    careInstructions: validatedProductFields.data.careInstructions ?? null,
+  };
 
-  //   try {
-  //     // Upload all images to Cloudinary in parallel
-  //     const uploadPromises = validatedImages.map((image) =>
-  //       uploadToCloudinary(image),
-  //     );
-  //     const imageUrls = await Promise.all(uploadPromises);
+  try {
+    const insertUser = async (product: NewProduct) => {
+      return db.insert(products).values(product).returning();
+    };
 
-  //     // Insert product into database
-  //     const [product] = await db
-  //       .insert(products)
-  //       .values({
-  //         name: productName,
-  //         description,
-  //         price: price.toString(),
-  //         costPrice: costPrice ? costPrice.toString() : null,
-  //         inventoryCount,
-  //         imageUrl: imageUrls[0], // Primary image
-  //       })
-  //       .returning();
+    const newUser: NewProduct = dbData;
+    const [product] = await insertUser(newUser);
 
-  //     // Insert all product images
-  //     if (imageUrls.length > 0) {
-  //       await db.insert(productImages).values(
-  //         imageUrls.map((url, index) => ({
-  //           productId: product.id,
-  //           imageUrl: url,
-  //           isPrimary: index === 0,
-  //         })),
-  //       );
-  //     }
+    //     revalidatePath("/admin/products");
 
-  //     revalidatePath("/admin/products");
-
-  //     return {
-  //       success: true,
-  //       message: "Product created successfully",
-  //       productId: product.id,
-  //     };
-  //   } catch (error) {
-  //     console.error("Error creating product:", error);
-  //     return {
-  //       success: false,
-  //       message: "Failed to create product. Please try again.",
-  //     };
-  //   }
+    return {
+      success: true,
+      message: "Product created successfully",
+      productId: product.id,
+    };
+  } catch (error) {
+    console.error("Error creating product:", error);
+    return {
+      success: false,
+      message: "Failed to create product. Please try again.",
+    };
+  }
 }
