@@ -40,6 +40,5 @@ export const uploadToCloudinary = async (
 
 export const handlecloudinaryUpload = async (images: File[] | File) => {
   const urls = await uploadToCloudinary(images);
-  console.log(urls); // string[]
-  return [...urls];
+  return Array.isArray(urls) ? urls : [urls];
 };

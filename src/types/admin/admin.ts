@@ -1,14 +1,20 @@
 import * as z from "zod";
 
 export const ProductSchema = z.object({
-  productName: z.string().min(1, "Product name is required"),
+  productName: z
+    .string()
+    .trim()
+    .min(3, "Product name must be at least 3 characters"),
   description: z.string().optional(),
-  price: z.number().min(0, "Price must be a positive number"),
+  price: z.number().positive("Price must be greater than zero"),
   costPrice: z.number().min(0).optional(),
   categoryId: z.string().optional(),
-  inventoryCount: z.number().min(0).optional(),
+  inventoryCount: z.number().int().min(0).optional(),
   sku: z.string().optional(),
-  images: z.array(z.string().url()).min(1, "At least one image is required").optional(),
+  images: z
+    .array(z.string().url())
+    .min(1, "At least one image is required")
+    .optional(),
   isActive: z.boolean().default(true).optional(),
   featured: z.boolean().default(false).optional(),
   sizes: z.array(z.string()).optional(), // ["XS", "S", "M", "L", "XL"]
@@ -24,7 +30,6 @@ const ImageFileSchema = z
   .refine((file) => file.size <= 5 * 1024 * 1024, {
     message: "Image must be under 5MB",
   });
-
 
 export const ImageFilesSchema = z
   .array(ImageFileSchema)

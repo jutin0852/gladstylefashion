@@ -16,16 +16,21 @@ import {
 } from "../../../components/ui/field";
 import { Button } from "../../../components/ui/button";
 import { handlecloudinaryUpload } from "../../../lib/cloudinary";
-import { createProduct } from "../../actions/products";
 import { ImageFilesSchema, ProductSchema } from "../../../types/admin/admin";
 import { toast } from "sonner";
 import { Spinner } from "../../../components/ui/spinner";
+import {
+  checkSlugExists,
+  createProductAction,
+} from "../../actions/addProducts";
+import { getCategoryOptions } from "../../actions/manageCategories";
 
 type ProductFormValues = z.infer<typeof ProductSchema>;
 
 export default function AddProduct() {
   const [previews, setPreviews] = React.useState<string[]>([]);
   const [images, setImages] = React.useState<File[]>([]);
+  const [categories, setCategories] = React.useState<{ id: string; name: string }[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const fileReplaceRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -39,6 +44,9 @@ export default function AddProduct() {
       inventoryCount: 0,
       isActive: true,
       featured: false,
+      categoryId: "",
+      materials: "",
+      careInstructions: "",
     },
   });
   const isSubmitting = form.formState.isSubmitting;
@@ -48,6 +56,7 @@ export default function AddProduct() {
     image: File | File[],
   ) => {
     if (isSubmitting) return;
+
     const fileValidation = ImageFilesSchema.safeParse(images);
     console.log(fileValidation.success, fileValidation.error);
 
@@ -67,15 +76,31 @@ export default function AddProduct() {
         formData.append(key, String(value)); // numbers must be converted
       }
     });
+
+    const slugExists = await checkSlugExists(data.productName);
+    if (slugExists) {
+      form.setError("productName", {
+        type: "manual",
+        message:
+          "A product with this name already exists. Please use a different name.",
+      });
+      return;
+    }
+
     const productImages = await handlecloudinaryUpload(image);
     productImages.map((image) => formData.append("images", image));
-    const res = await createProduct(formData);
+    const res = await createProductAction(formData);
 
     if (!res.success) {
-      toast.error("Failed to add product");
+      toast.error(res.message);
+      return;
     }
     toast.success(res.message);
   };
+
+  useEffect(() => {
+    void getCategoryOptions().then(setCategories);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -118,8 +143,9 @@ export default function AddProduct() {
 
   const replaceImage = (index: number) => {
     if (!fileReplaceRef.current) return;
-    fileReplaceRef.current.onchange = (e: any) => {
-      const file = e.target.files[0];
+    fileReplaceRef.current.onchange = (event) => {
+      const input = event.currentTarget as HTMLInputElement;
+      const file = input.files?.[0];
       if (file) {
         const updated = images.map((img, i) => (i === index ? file : img));
         setImages(updated);
@@ -278,6 +304,73 @@ export default function AddProduct() {
                 </Field>
               )}
             />
+            <Controller
+              name="sku"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="sku">SKU</FieldLabel>
+                  <Input {...field} id="sku" placeholder="e.g. GS-DRESS-001" />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              name="categoryId"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="categoryId">Category</FieldLabel>
+                  <select {...field} id="categoryId" className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                    <option value="">Uncategorised</option>
+                    {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                  </select>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              name="sizes"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="sizes">Sizes</FieldLabel>
+                  <Input
+                    id="sizes"
+                    value={field.value?.join(", ") || ""}
+                    onChange={(event) => field.onChange(event.target.value.split(",").map((size) => size.trim()).filter(Boolean))}
+                    placeholder="XS, S, M, L, XL"
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              name="materials"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="materials">Materials</FieldLabel>
+                  <Input {...field} value={field.value || ""} id="materials" placeholder="e.g. 100% organic cotton" />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <Controller
+              name="careInstructions"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="careInstructions">Care instructions</FieldLabel>
+                  <Textarea {...field} value={field.value || ""} id="careInstructions" placeholder="e.g. Machine wash cold" />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+            <div className="flex gap-6 text-sm">
+              <label className="flex items-center gap-2"><input type="checkbox" defaultChecked {...form.register("isActive")} /> Publish product</label>
+              <label className="flex items-center gap-2"><input type="checkbox" {...form.register("featured")} /> Featured</label>
+            </div>
             {/* add inventory count */}
 
             <Field orientation="horizontal" className="my-5">
@@ -300,7 +393,7 @@ export default function AddProduct() {
               >
                 {isSubmitting ? (
                   <span className="flex flex-nowrap gap-2">
-                    <Spinner className="self-center"/>
+                    <Spinner className="self-center" />
                     Adding Product..
                   </span>
                 ) : (

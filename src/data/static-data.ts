@@ -122,7 +122,7 @@ export const adminNav = {
     },
     {
       name: "Product Media",
-      url: "#",
+      url: "/admin/product-media",
       icon: IconPhoto,
     },
     {
@@ -132,7 +132,7 @@ export const adminNav = {
     },
     {
       name: "Product Review",
-      url: "#",
+      url: "/admin/product-review",
       icon: IconMessageStar,
     },
   ],

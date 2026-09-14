@@ -1,15 +1,30 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/actions/products.ts
 "use server";
 
 import { ProductSchema } from "@/types/admin/admin";
-import { products } from "../../lib/schema";
+import { NewProduct, products } from "../../lib/schema";
+import { createProduct } from "../../lib/admin/queries/product";
 import { db } from "../../lib/db";
+import { eq } from "drizzle-orm";
+import { requireAdmin } from "../../lib/admin-auth";
+
 // import { revalidatePath } from "next/cache";
 
-type NewProduct = typeof products.$inferInsert;
+export async function checkSlugExists(productName: string) {
+  const slug = productName.toLowerCase().replace(/\s+/g, "-");
 
-export async function createProduct(formData: FormData) {
-  console.log(formData, "yess");
+  const existing = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(eq(products.slug, slug))
+    .limit(1);
+
+  return existing.length > 0;
+}
+
+export async function createProductAction(formData: FormData) {
+  await requireAdmin();
 
   const images = formData.getAll("images");
 
@@ -22,6 +37,16 @@ export async function createProduct(formData: FormData) {
       : undefined,
     inventoryCount: Number(formData.get("inventoryCount")),
     images,
+    sku: formData.get("sku") || undefined,
+    categoryId: formData.get("categoryId") || undefined,
+    sizes: String(formData.get("sizes") || "")
+      .split(",")
+      .map((size) => size.trim())
+      .filter(Boolean),
+    isActive: formData.get("isActive") !== "false",
+    featured: formData.get("featured") === "true",
+    materials: formData.get("materials") || undefined,
+    careInstructions: formData.get("careInstructions") || undefined,
   });
 
   if (!validatedProductFields.success) {
@@ -30,8 +55,6 @@ export async function createProduct(formData: FormData) {
       message: "Validation failed",
     };
   }
-  console.log(validatedProductFields.data, "validated ");
-
   const dbData = {
     productName: validatedProductFields.data.productName, // Map productName to name
     slug: validatedProductFields.data.productName
@@ -43,7 +66,6 @@ export async function createProduct(formData: FormData) {
     inventoryCount: validatedProductFields.data.inventoryCount ?? null,
     categoryId: validatedProductFields.data.categoryId ?? null,
     sku: validatedProductFields.data.sku ?? null,
-    images: validatedProductFields.data.images ?? [],
     isActive: validatedProductFields.data.isActive,
     featured: validatedProductFields.data.featured,
     sizes: validatedProductFields.data.sizes ?? [],
@@ -52,12 +74,11 @@ export async function createProduct(formData: FormData) {
   };
 
   try {
-    const insertUser = async (product: NewProduct) => {
-      return db.insert(products).values(product).returning();
-    };
-
-    const newUser: NewProduct = dbData;
-    const [product] = await insertUser(newUser);
+    const newProduct: NewProduct = dbData;
+    const product = await createProduct(
+      newProduct,
+      validatedProductFields.data.images!,
+    );
 
     //     revalidatePath("/admin/products");
 
@@ -67,7 +88,17 @@ export async function createProduct(formData: FormData) {
       productId: product.id,
     };
   } catch (error) {
-    console.error("Error creating product:", error);
+    if (error instanceof Error) {
+      const cause = (error as any).cause;
+      if (cause && cause.code === "23505") {
+        console.log("Caught duplicate slug error");
+        return {
+          success: false,
+          message:
+            "A product with this name already exists. Please use a different name.",
+        };
+      }
+    }
     return {
       success: false,
       message: "Failed to create product. Please try again.",

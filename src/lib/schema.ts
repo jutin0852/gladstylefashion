@@ -6,6 +6,8 @@ import {
   timestamp,
   decimal,
   jsonb,
+  serial,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
@@ -95,7 +97,7 @@ export const products = pgTable("products", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  productName: text("ProductName").notNull(),
+  productName: text("Product_name").notNull(),
   slug: text("slug").notNull().unique(),
   description: text("description"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
@@ -103,7 +105,7 @@ export const products = pgTable("products", {
   categoryId: text("category_id").references(() => categories.id),
   inventoryCount: integer("inventory_count").default(0),
   sku: text("sku").unique(),
-  images: jsonb("images").$type<string[]>().default([]).notNull(),
+  // images: jsonb("images").$type<string[]>().default([]).notNull(),
   isActive: boolean("is_active").default(true),
   featured: boolean("featured").default(false),
   sizes: jsonb("sizes").$type<string[]>().default([]), // ["XS", "S", "M", "L", "XL"]
@@ -111,6 +113,17 @@ export const products = pgTable("products", {
   careInstructions: text("care_instructions"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const productImages = pgTable("product_images", {
+  id: serial("id").primaryKey(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  imageUrl: varchar("image_url", { length: 500 }).notNull(),
+  altText: varchar("alt_text", { length: 255 }),
+  displayOrder: integer("display_order").default(0).notNull(), // For ordering images (0-4)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Orders table
@@ -134,9 +147,21 @@ export const orders = pgTable("orders", {
   }>(),
   paymentIntentId: text("payment_intent_id"),
   paymentStatus: text("payment_status").default("pending"), // pending, paid, failed, refunded
+  carrier: text("carrier"),
+  trackingNumber: text("tracking_number"),
+  shippedAt: timestamp("shipped_at"),
+  deliveredAt: timestamp("delivered_at"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const orderFulfillmentEvents = pgTable("order_fulfillment_events", {
+  id: serial("id").primaryKey(),
+  orderId: text("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+  status: text("status").notNull(),
+  message: text("message"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Order Items table
@@ -169,11 +194,20 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
 
 // Product Relations
 export const productsRelations = relations(products, ({ one, many }) => ({
+  images: many(productImages),
+
   category: one(categories, {
     fields: [products.categoryId],
     references: [categories.id],
   }), // Each product belongs to one category
   orderItems: many(orderItems), // One product can be in many order items
+}));
+
+export const productImagesRelations = relations(productImages, ({ one }) => ({
+  product: one(products, {
+    fields: [productImages.productId],
+    references: [products.id],
+  }),
 }));
 
 // Order Relations
@@ -183,6 +217,11 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     references: [user.id],
   }), // Each order belongs to one user (nullable)
   items: many(orderItems), // One order can have many items
+  fulfillmentEvents: many(orderFulfillmentEvents),
+}));
+
+export const orderFulfillmentEventsRelations = relations(orderFulfillmentEvents, ({ one }) => ({
+  order: one(orders, { fields: [orderFulfillmentEvents.orderId], references: [orders.id] }),
 }));
 
 // Order Item Relations
@@ -208,6 +247,10 @@ export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type NewOrderItem = typeof orderItems.$inferInsert;
+export type OrderFulfillmentEvent = typeof orderFulfillmentEvents.$inferSelect;
+
+export type ProductImage = typeof productImages.$inferSelect;
+export type NewProductImage = typeof productImages.$inferInsert;
 
 export type Session = typeof session.$inferSelect;
 export type NewSession = typeof session.$inferInsert;

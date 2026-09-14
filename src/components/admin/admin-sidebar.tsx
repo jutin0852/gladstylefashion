@@ -22,27 +22,22 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname();
-
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              className="data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-transparent active:bg-transparent text-primary"
-            >
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Admin</span>
+            <SidebarMenuButton className="data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-transparent active:bg-transparent text-primary">
+              <IconInnerShadowTop className="!size-5" />
+              <span className="text-base font-semibold">Admin</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={adminNav.navMain}  />
+        <NavMain items={adminNav.navMain} />
         <NavDocuments items={adminNav.documents} />
         <NavSecondary items={adminNav.navSecondary} className="mt-auto" />
       </SidebarContent>

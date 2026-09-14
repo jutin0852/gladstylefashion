@@ -124,20 +124,25 @@ const chartData = [
 ];
 
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  desktop: {
-    label: "Desktop",
+  revenue: {
+    label: "Revenue",
     color: "var(--primary)",
   },
-  mobile: {
-    label: "Mobile",
+  orders: {
+    label: "Orders",
     color: "var(--primary)",
   },
 } satisfies ChartConfig;
 
-export function ChartAreaInteractive() {
+export function ChartAreaInteractive({
+  data = chartData.map((item) => ({
+    date: item.date,
+    orders: item.mobile,
+    revenue: item.desktop,
+  })),
+}: {
+  data?: { date: string; orders: number; revenue: number }[];
+}) {
   const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = React.useState("90d");
 
@@ -147,7 +152,7 @@ export function ChartAreaInteractive() {
     }
   }, [isMobile]);
 
-  const filteredData = chartData.filter((item) => {
+  const filteredData = data.filter((item) => {
     const date = new Date(item.date);
     const referenceDate = new Date("2024-06-30");
     let daysToSubtract = 90;
@@ -164,10 +169,10 @@ export function ChartAreaInteractive() {
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>Total Visitors</CardTitle>
+        <CardTitle>Store performance</CardTitle>
         <CardDescription>
           <span className="hidden @[540px]/card:block">
-            Total for the last 3 months
+            Orders and revenue for the last 3 months
           </span>
           <span className="@[540px]/card:hidden">Last 3 months</span>
         </CardDescription>
@@ -212,27 +217,27 @@ export function ChartAreaInteractive() {
         >
           <AreaChart data={filteredData}>
             <defs>
-              <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-desktop)"
+                  stopColor="var(--color-revenue)"
                   stopOpacity={1.0}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-desktop)"
+                  stopColor="var(--color-revenue)"
                   stopOpacity={0.1}
                 />
               </linearGradient>
-              <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="fillOrders" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-mobile)"
+                  stopColor="var(--color-orders)"
                   stopOpacity={0.8}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-mobile)"
+                  stopColor="var(--color-orders)"
                   stopOpacity={0.1}
                 />
               </linearGradient>
@@ -267,17 +272,17 @@ export function ChartAreaInteractive() {
               }
             />
             <Area
-              dataKey="mobile"
+              dataKey="orders"
               type="natural"
-              fill="url(#fillMobile)"
-              stroke="var(--color-mobile)"
+              fill="url(#fillOrders)"
+              stroke="var(--color-orders)"
               stackId="a"
             />
             <Area
-              dataKey="desktop"
+              dataKey="revenue"
               type="natural"
-              fill="url(#fillDesktop)"
-              stroke="var(--color-desktop)"
+              fill="url(#fillRevenue)"
+              stroke="var(--color-revenue)"
               stackId="a"
             />
           </AreaChart>

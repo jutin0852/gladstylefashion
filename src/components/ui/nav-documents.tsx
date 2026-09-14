@@ -51,7 +51,10 @@ export function NavDocuments({
               </a>
             </SidebarMenuButton>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger
+                asChild
+                id={`document-actions-${item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+              >
                 <SidebarMenuAction
                   showOnHover
                   className="data-[state=open]:bg-accent rounded-sm"
