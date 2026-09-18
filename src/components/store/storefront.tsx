@@ -1,32 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ArrowRight, Menu, Search, ShoppingBag, X } from "lucide-react";
+import BrandLogo from "./brand-logo";
+import { primaryProductAlt, primaryProductImage } from "./brand-assets";
+import { formatStorePrice } from "./currency";
+import CartDrawer from "./cart-drawer";
 import { useCart, type StoreProduct } from "./cart-context";
-import Link from "next/link";
-import {
-  ArrowRight,
-  ChevronDown,
-  Heart,
-  Menu,
-  Search,
-  ShoppingBag,
-  X,
-} from "lucide-react";
-
-const fallbackImages = [
-  "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=900&q=85",
-  "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=900&q=85",
-  "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?auto=format&fit=crop&w=900&q=85",
-  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=85",
-];
+import { useCartFeedback } from "./use-cart-feedback";
 
 export default function Storefront({ products }: { products: StoreProduct[] }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All pieces");
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { cart, cartCount, cartTotal, addToCart, updateQuantity, removeItem } =
-    useCart();
+  const { cartCount } = useCart();
+  const { feedback, addWithFeedback } = useCartFeedback();
 
   const categories = useMemo(() => {
     const names = products
@@ -49,315 +38,157 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
   }, [category, products, query]);
 
   return (
-    <main className="min-h-screen bg-[#f5f3ef] text-[#252525]">
-      <div className="border-b border-[#252525]/10 bg-[#d9e8df] px-5 py-2 text-center text-[11px] font-medium uppercase tracking-[0.2em]">
-        Complimentary delivery on orders over $150
+    <main className="min-h-screen bg-white text-[#111111]">
+      <div className="bg-[#d3146d] px-5 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-white sm:text-[11px]">
+        Glad Style Fashion • Ready-to-wear from Lagos
       </div>
 
-      <header className="mx-auto flex max-w-350 items-center justify-between px-5 py-6 lg:px-10">
+      <header className="relative mx-auto flex max-w-[1440px] items-center justify-between border-b border-black px-5 py-4 lg:px-10">
         <button
-          className="flex items-center gap-2 lg:hidden"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Open menu"
+          className="grid size-10 place-items-center border border-black lg:hidden"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
         >
-          {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          {menuOpen ? <X size={20} strokeWidth={1.5} /> : <Menu size={20} strokeWidth={1.5} />}
         </button>
         <nav
-          className={`${menuOpen ? "flex" : "hidden"} absolute left-0 top-[93px] z-20 w-full flex-col gap-5 border-b border-black/10 bg-[#f5f3ef] px-5 py-6 text-xs uppercase tracking-[0.18em] lg:static lg:flex lg:w-auto lg:flex-row lg:border-0 lg:bg-transparent lg:p-0`}
+          className={`${menuOpen ? "flex" : "hidden"} absolute left-0 right-0 top-full z-20 flex-col border-b border-black bg-white px-5 py-6 text-xs font-medium uppercase tracking-[0.14em] lg:static lg:flex lg:flex-row lg:items-center lg:gap-8 lg:border-0 lg:p-0`}
         >
-          <a href="#shop">Shop</a>
-          <a href="#story">Our story</a>
-          <a href="#journal">Journal</a>
+          <a href="#shop" onClick={() => setMenuOpen(false)} className="py-3 lg:py-0">Shop</a>
+          <a href="#story" onClick={() => setMenuOpen(false)} className="py-3 lg:py-0">Our story</a>
+          <a href="#delivery" onClick={() => setMenuOpen(false)} className="py-3 lg:py-0">Delivery</a>
         </nav>
-        <a
-          href="#top"
-          className="font-serif text-3xl tracking-[-0.06em] lg:absolute lg:left-1/2 lg:-translate-x-1/2"
-        >
-          gladstyle
+        <a href="#top" className="absolute left-1/2 -translate-x-1/2 bg-white px-2" aria-label="Glad Style Fashion home">
+          <BrandLogo className="h-auto w-32 sm:w-44" />
         </a>
-        <div className="flex items-center gap-4">
-          <label className="hidden items-center gap-2 border-b border-black/30 pb-1 lg:flex">
-            <Search size={16} strokeWidth={1.5} />
+        <div className="flex items-center gap-3">
+          <label className="hidden items-center gap-2 border-b border-black pb-1 lg:flex">
+            <Search size={15} strokeWidth={1.5} />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              className="w-32 bg-transparent text-xs outline-none placeholder:text-black/50"
+              className="w-28 bg-transparent text-xs outline-none placeholder:text-black/45"
               placeholder="Search"
               aria-label="Search products"
             />
           </label>
           <button
-            className="relative"
+            className="relative grid size-10 place-items-center border border-black transition-colors hover:bg-black hover:text-white active:scale-[0.98]"
             onClick={() => setCartOpen(true)}
             aria-label="Open shopping bag"
           >
-            <ShoppingBag size={20} strokeWidth={1.5} />
-            {cartCount > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#252525] px-1 text-[9px] text-white">
-                {cartCount}
-              </span>
-            )}
+            <ShoppingBag size={19} strokeWidth={1.5} />
+            {cartCount > 0 && <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-[#d3146d] text-[10px] font-bold text-white">{cartCount}</span>}
           </button>
         </div>
       </header>
 
-      <section
-        id="top"
-        className="mx-auto grid max-w-350 gap-8 px-5 pb-16 pt-8 lg:grid-cols-[1fr_1.15fr] lg:px-10 lg:pb-24 lg:pt-14"
-      >
-        <div className="flex flex-col justify-end pb-2 lg:pb-12">
-          <p className="mb-6 text-xs uppercase tracking-[0.22em] text-black/55">
-            Edition 01 / Spring 2026
-          </p>
-          <h1 className="max-w-xl font-serif text-6xl leading-[0.88] tracking-[-0.06em] sm:text-8xl">
-            Clothes with room to become you.
-          </h1>
-          <p className="mt-8 max-w-sm text-sm leading-6 text-black/65">
-            Considered silhouettes, honest materials, and everyday pieces made
-            for a life in motion.
-          </p>
-          <a
-            href="#shop"
-            className="mt-10 flex w-fit items-center gap-3 border-b border-black pb-2 text-xs uppercase tracking-[0.18em]"
-          >
-            Explore the collection <ArrowRight size={16} strokeWidth={1.5} />
-          </a>
-        </div>
-        <div className="relative min-h-[480px] overflow-hidden bg-[#d7c6bb] sm:min-h-[620px]">
-          <img
-            src={fallbackImages[0]}
-            alt="Gladstyle spring collection"
-            className="h-full w-full object-cover object-center mix-blend-multiply"
-          />
-          <div className="absolute bottom-5 left-5 bg-[#f5f3ef] px-4 py-3 text-xs uppercase tracking-[0.15em]">
-            The soft structure edit
+      <section id="top" className="mx-auto grid max-w-[1440px] border-x border-black lg:grid-cols-[0.94fr_1.06fr]">
+        <div className="flex min-h-[480px] flex-col justify-between border-b border-black px-5 py-8 sm:px-10 sm:py-12 lg:min-h-[650px] lg:border-b-0 lg:border-r">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">The first ready-to-wear edit</p>
+          <div className="max-w-xl py-10">
+            <h1 className="text-5xl font-medium leading-[0.92] tracking-[-0.065em] sm:text-7xl lg:text-[84px]">Dress like the moment is yours.</h1>
+            <p className="mt-7 max-w-md text-base leading-7 text-black/65">Made for plans, pictures, and every place in between. Discover polished pieces ready to wear now.</p>
+            <a href="#shop" className="mt-9 inline-flex items-center gap-3 bg-black px-6 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#d3146d] active:scale-[0.98]">
+              Shop the collection <ArrowRight size={16} strokeWidth={1.5} />
+            </a>
           </div>
+          <p className="max-w-xs border-t border-black pt-4 text-xs leading-5 text-black/60">A Lagos fashion house for women who like their wardrobe to arrive with presence.</p>
+        </div>
+        <div className="relative min-h-[540px] bg-[#f8dbe9] p-4 sm:p-7 lg:min-h-[650px]">
+          <img src={primaryProductImage} alt={primaryProductAlt} className="h-full w-full object-cover object-center" />
+          <div className="absolute bottom-7 left-7 bg-white px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.15em] sm:bottom-10 sm:left-10">New collection</div>
         </div>
       </section>
 
-      <section
-        id="shop"
-        className="border-t border-black/10 px-5 py-14 lg:px-10 lg:py-20"
-      >
-        <div className="mx-auto max-w-350">
-          <div className="mb-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-            <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.2em] text-black/50">
-                The collection
-              </p>
-              <h2 className="font-serif text-5xl tracking-[-0.05em]">
-                Good things, well made.
-              </h2>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {categories.map((item) => (
-                <button
-                  key={item}
-                  onClick={() => setCategory(item)}
-                  className={`border px-4 py-2 text-[11px] uppercase tracking-[0.12em] transition ${category === item ? "border-[#252525] bg-[#252525] text-white" : "border-black/15 hover:border-black/50"}`}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
+      <section className="border-y border-black bg-[#d3146d] text-white">
+        <div className="mx-auto grid max-w-[1440px] divide-y divide-white/45 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <p className="px-5 py-5 text-center text-xs font-medium uppercase tracking-[0.14em] sm:px-8">Ready-to-wear pieces</p>
+          <p className="px-5 py-5 text-center text-xs font-medium uppercase tracking-[0.14em] sm:px-8">Shopping from Lagos</p>
+          <p className="px-5 py-5 text-center text-xs font-medium uppercase tracking-[0.14em] sm:px-8">UK and US customers welcome</p>
+        </div>
+      </section>
+
+      <section id="shop" className="mx-auto max-w-[1440px] px-5 py-16 sm:px-10 lg:py-24">
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">Shop ready to wear</p>
+          <h2 className="mt-4 text-4xl font-medium leading-[0.98] tracking-[-0.055em] sm:text-6xl">Pieces made to be noticed.</h2>
+        </div>
+        <div className="mt-10 flex flex-col justify-between gap-5 border-y border-black py-4 lg:flex-row lg:items-center">
+          <div className="flex flex-wrap gap-2">
+            {categories.map((item) => (
+              <button
+                key={item}
+                onClick={() => setCategory(item)}
+                className={`border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors active:scale-[0.98] ${category === item ? "border-[#d3146d] bg-[#d3146d] text-white" : "border-black bg-white hover:border-[#d3146d] hover:text-[#d3146d]"}`}
+              >
+                {item}
+              </button>
+            ))}
           </div>
-          {filteredProducts.length === 0 ? (
-            <div className="border-y border-black/10 py-20 text-center font-serif text-3xl">
-              Nothing here yet.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-x-3 gap-y-12 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-5">
-              {filteredProducts.map((product, index) => {
-                const image =
-                  product.images[0]?.imageUrl ||
-                  fallbackImages[index % fallbackImages.length];
-                return (
-                  <article key={product.id} className="group">
-                    <div className="relative aspect-[3/4] overflow-hidden bg-[#dedbd4]">
-                      <a
-                        href={`/product/${product.slug}`}
-                        className="block h-full w-full"
-                      >
-                        <img
-                          src={image}
-                          alt={
-                            product.images[0]?.altText || product.productName
-                          }
-                          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                        />
-                      </a>
-                      {product.featured && (
-                        <span className="absolute left-3 top-3 bg-[#d9e8df] px-2 py-1 text-[10px] uppercase tracking-[0.13em]">
-                          Featured
-                        </span>
-                      )}
-                      <button
-                        className="absolute right-3 top-3 opacity-0 transition group-hover:opacity-100"
-                        aria-label={`Save ${product.productName}`}
-                      >
-                        <Heart size={18} strokeWidth={1.5} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          addToCart(product);
-                          setCartOpen(true);
-                        }}
-                        className="absolute bottom-3 left-3 right-3 translate-y-3 bg-[#252525] py-3 text-[10px] uppercase tracking-[0.16em] text-white opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100"
-                      >
-                        Add to bag
-                      </button>
-                    </div>
-                    <div className="flex items-start justify-between gap-3 pt-4">
-                      <div>
-                        <h3 className="font-serif text-lg leading-tight">
-                          {product.productName}
-                        </h3>
-                        <p className="mt-1 text-xs text-black/50">
-                          {product.category?.name || "Gladstyle edition"}
-                        </p>
-                      </div>
-                      <p className="text-sm">
-                        ${Number(product.price).toFixed(2)}
-                      </p>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
+          <label className="flex items-center gap-2 border-b border-black pb-2 lg:hidden">
+            <Search size={15} strokeWidth={1.5} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent text-sm outline-none placeholder:text-black/45" placeholder="Search the collection" aria-label="Search the collection" />
+          </label>
         </div>
-      </section>
-
-      <section
-        id="story"
-        className="grid border-t border-black/10 bg-[#cbd8d0] px-5 py-20 lg:grid-cols-2 lg:px-10 lg:py-28"
-      >
-        <p className="text-xs uppercase tracking-[0.2em] text-black/55">
-          A slower wardrobe
-        </p>
-        <div className="mt-8 max-w-xl lg:mt-0">
-          <h2 className="font-serif text-5xl leading-[0.95] tracking-[-0.05em]">
-            Less noise. More wearing.
-          </h2>
-          <p className="mt-7 text-sm leading-7 text-black/65">
-            We design for repeat days and long relationships. Each Gladstyle
-            piece begins with a useful shape, a beautiful fabric, and the
-            question: will you still reach for this next year?
-          </p>
-          <a
-            href="#top"
-            className="mt-9 flex w-fit items-center gap-3 border-b border-black pb-2 text-xs uppercase tracking-[0.18em]"
-          >
-            Read our story <ArrowRight size={16} strokeWidth={1.5} />
-          </a>
-        </div>
-      </section>
-
-      <footer
-        id="journal"
-        className="mx-auto flex max-w-350 flex-col gap-6 px-5 py-10 text-xs uppercase tracking-[0.15em] text-black/55 sm:flex-row sm:items-center sm:justify-between lg:px-10"
-      >
-        <span>Gladstyle / 2026</span>
-        <span>Made for the in-between</span>
-        <span>Contact / Instagram</span>
-      </footer>
-
-      {cartOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/30"
-          onClick={() => setCartOpen(false)}
-        />
-      )}
-      <aside
-        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col bg-[#f5f3ef] p-6 shadow-2xl transition-transform ${cartOpen ? "translate-x-0" : "translate-x-full"}`}
-      >
-        <div className="flex items-center justify-between border-b border-black/10 pb-5">
-          <h2 className="font-serif text-3xl">Your bag</h2>
-          <button
-            onClick={() => setCartOpen(false)}
-            aria-label="Close shopping bag"
-          >
-            <X size={22} strokeWidth={1.5} />
-          </button>
-        </div>
-        {cart.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <ShoppingBag size={28} strokeWidth={1} />
-            <p className="mt-5 font-serif text-2xl">Your bag is waiting.</p>
-            <p className="mt-2 text-sm text-black/55">
-              Add something considered to get started.
-            </p>
+        {filteredProducts.length === 0 ? (
+          <div className="py-20 text-center">
+            <p className="text-2xl font-medium">No pieces match that search.</p>
+            <button onClick={() => { setQuery(""); setCategory("All pieces"); }} className="mt-5 border-b border-[#d3146d] pb-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#d3146d]">View all pieces</button>
           </div>
         ) : (
-          <>
-            <div className="flex-1 divide-y divide-black/10 overflow-y-auto">
-              {cart.map((item) => (
-                <div key={item.id} className="flex gap-4 py-5">
-                  <img
-                    src={item.images[0]?.imageUrl || fallbackImages[0]}
-                    alt={item.productName}
-                    className="h-28 w-24 object-cover"
-                  />
-                  <div className="flex flex-1 flex-col justify-between">
-                    <div className="flex justify-between gap-2">
-                      <div>
-                        <h3 className="font-serif text-lg">
-                          {item.productName}
-                        </h3>
-                        {item.size && (
-                          <p className="mt-1 text-xs text-black/50">
-                            Size {item.size}
-                          </p>
-                        )}
-                      </div>
-                      <span className="text-sm">
-                        ${(Number(item.price) * item.quantity).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs">
-                      <button
-                        onClick={() => updateQuantity(item.id, -1, item.size)}
-                        className="border border-black/20 px-2 py-1"
-                      >
-                        -
-                      </button>
-                      <span>{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.id, 1, item.size)}
-                        className="border border-black/20 px-2 py-1"
-                      >
-                        +
-                      </button>
-                      <button
-                        onClick={() => removeItem(item.id, item.size)}
-                        className="ml-2 text-[10px] uppercase tracking-[0.12em] text-black/50 underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
+          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">
+            {filteredProducts.map((product) => (
+              <article key={product.id} className="group">
+                <a href={`/product/${product.slug}`} className="block overflow-hidden bg-[#f8dbe9]">
+                  <img src={product.images?.[0]?.imageUrl || primaryProductImage} alt={product.images?.[0]?.altText || primaryProductAlt} className="aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+                </a>
+                <div className="flex items-start justify-between gap-3 border-b border-black py-4">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[#d3146d]">{product.category?.name || "Glad Style Fashion"}</p>
+                    <h3 className="mt-1 text-lg font-medium leading-tight">{product.productName}</h3>
                   </div>
+                  <p className="pt-4 text-sm font-medium">{formatStorePrice(product.price)}</p>
                 </div>
-              ))}
-            </div>
-            <div className="border-t border-black/10 pt-5">
-              <div className="flex justify-between font-serif text-2xl">
-                <span>Total</span>
-                <span>${cartTotal.toFixed(2)}</span>
-              </div>
-              <Link
-                href="/checkout"
-                className="mt-5 block w-full bg-[#252525] py-4 text-center text-xs uppercase tracking-[0.18em] text-white"
-              >
-                Checkout{" "}
-                <ChevronDown
-                  className="ml-2 inline rotate-[-90deg]"
-                  size={14}
-                />
-              </Link>
-            </div>
-          </>
+                <button onClick={() => addWithFeedback(product)} className="mt-3 w-full border border-black px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors hover:border-[#d3146d] hover:bg-[#d3146d] hover:text-white active:scale-[0.98]">
+                  {feedback?.productId === product.id && feedback.success ? "Added to bag" : "Add to bag"}
+                </button>
+                <p role="status" aria-live="polite" className="min-h-5 pt-2 text-xs text-[#d3146d]">{feedback?.productId === product.id && !feedback.success ? feedback.message : ""}</p>
+              </article>
+            ))}
+          </div>
         )}
-      </aside>
+      </section>
+
+      <section id="story" className="border-y border-black bg-[#f8dbe9]">
+        <div className="mx-auto grid max-w-[1440px] gap-10 px-5 py-16 sm:px-10 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20 lg:py-24">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">Glad Style Fashion</p>
+          <div className="max-w-3xl">
+            <h2 className="text-4xl font-medium leading-[0.98] tracking-[-0.055em] sm:text-6xl">Made to make getting dressed feel like the best part of the plan.</h2>
+            <p className="mt-7 max-w-2xl text-base leading-7 text-black/70">We focus on ready-made pieces with a feminine point of view, so a beautiful outfit can be the easy decision.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="delivery" className="mx-auto max-w-[1440px] px-5 py-16 sm:px-10 lg:py-24">
+        <div className="grid gap-10 border-t border-black pt-6 md:grid-cols-3">
+          <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">01</p><h2 className="mt-3 text-2xl font-medium tracking-[-0.03em]">Choose your piece</h2><p className="mt-3 text-sm leading-6 text-black/65">Select the style and available size that works for you.</p></div>
+          <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">02</p><h2 className="mt-3 text-2xl font-medium tracking-[-0.03em]">Place your order</h2><p className="mt-3 text-sm leading-6 text-black/65">Enter your delivery details at checkout and we will confirm the next steps.</p></div>
+          <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">03</p><h2 className="mt-3 text-2xl font-medium tracking-[-0.03em]">Wear it your way</h2><p className="mt-3 text-sm leading-6 text-black/65">Dress it up, keep it simple, and make it entirely yours.</p></div>
+        </div>
+      </section>
+
+      <footer className="border-t border-black bg-white">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-8 px-5 py-10 sm:px-10 md:flex-row md:items-end md:justify-between">
+          <BrandLogo className="h-auto w-48" />
+          <div className="flex flex-col gap-2 text-xs font-medium uppercase tracking-[0.13em] text-black/60 md:items-end">
+            <span>Ready-to-wear from Lagos</span>
+            <span>Instagram and customer support coming soon</span>
+          </div>
+        </div>
+      </footer>
+
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} fallbackImage={primaryProductImage} emptyContent={<p className="mt-2 text-sm text-black/55">Add a piece you will want to wear on repeat.</p>} />
     </main>
   );
 }

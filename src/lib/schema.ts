@@ -176,6 +176,12 @@ export const orderItems = pgTable("order_items", {
   productName: text("product_name").notNull(), // Store at time of order in case product changes
   productImage: text("product_image"),
   size: text("size"), // Size selected at time of order
+  customizations: jsonb("customizations").$type<{
+    color?: string;
+    desiredLength?: string;
+    customerHeight?: string;
+    notes?: string;
+  }>(),
   quantity: integer("quantity").notNull(),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),

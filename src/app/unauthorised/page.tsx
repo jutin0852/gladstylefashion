@@ -1,50 +1,26 @@
 import Link from "next/link";
+import { ArrowLeft, LockKeyhole } from "lucide-react";
+import BrandLogo from "../../components/store/brand-logo";
 
 export default function UnauthorizedPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full text-center p-8 bg-white rounded-lg shadow-md">
-        <div className="mb-4">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-            <svg
-              className="h-6 w-6 text-red-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
+    <main className="min-h-screen bg-white px-5 py-5 text-[#111111] sm:px-10">
+      <div className="mx-auto flex min-h-[calc(100dvh-40px)] max-w-[960px] flex-col border border-black">
+        <header className="flex items-center justify-between border-b border-black px-5 py-4 sm:px-8">
+          <Link href="/" aria-label="Glad Style Fashion home"><BrandLogo className="h-auto w-36 sm:w-44" /></Link>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d3146d]">Private area</span>
+        </header>
+        <div className="flex flex-1 flex-col items-center justify-center px-5 py-16 text-center">
+          <div className="grid size-14 place-items-center rounded-full bg-[#f8dbe9] text-[#d3146d]"><LockKeyhole size={25} strokeWidth={1.5} /></div>
+          <p className="mt-7 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">Access restricted</p>
+          <h1 className="mt-4 max-w-lg text-5xl font-medium leading-[0.95] tracking-[-0.06em] sm:text-6xl">This area is for the Glad Style Fashion team.</h1>
+          <p className="mt-6 max-w-md text-sm leading-7 text-black/65">You do not have permission to view the administration area. Sign in with an approved account or return to the store.</p>
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <Link href="/" className="inline-flex items-center justify-center gap-3 bg-black px-6 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#d3146d]"><ArrowLeft size={16} strokeWidth={1.5} /> Return to store</Link>
+            <Link href="/login" className="border border-black px-6 py-4 text-xs font-semibold uppercase tracking-[0.16em] transition-colors hover:border-[#d3146d] hover:text-[#d3146d]">Sign in</Link>
           </div>
         </div>
-
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-
-        <p className="text-gray-600 mb-6">
-          You dont have permission to access the admin panel. Only
-          administrators can view this page.
-        </p>
-
-        <div className="space-y-3">
-          <Link
-            href="/"
-            className="block w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Go to Home
-          </Link>
-
-          <Link
-            href="/login"
-            className="block w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            Login as Different User
-          </Link>
-        </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -36,6 +36,13 @@
       "when": 1787750400000,
       "tag": "0004_fulfilment_history",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789727622284,
+      "tag": "0005_order_item_customizations",
+      "breakpoints": true
     }
   ]
 }

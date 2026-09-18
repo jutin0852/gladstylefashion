@@ -22,6 +22,12 @@ const checkoutSchema = z.object({
         productId: z.string().min(1),
         quantity: z.number().int().min(1).max(99),
         size: z.string().max(30).optional(),
+        customizations: z.object({
+          color: z.string().trim().max(80).optional(),
+          desiredLength: z.string().trim().max(80).optional(),
+          customerHeight: z.string().trim().max(80).optional(),
+          notes: z.string().trim().max(500).optional(),
+        }).optional(),
       }),
     )
     .min(1),
@@ -98,6 +104,7 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
           size: item.size,
           unitPrice,
           totalPrice: unitPrice * quantity,
+          customizations: item.customizations,
         };
       });
       for (const [productId, quantity] of quantities) {
@@ -134,12 +141,13 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
         .returning({ id: orders.id, orderNumber: orders.orderNumber });
 
       await tx.insert(orderItems).values(
-        lineItems.map(({ product, quantity, size, unitPrice, totalPrice }) => ({
+        lineItems.map(({ product, quantity, size, unitPrice, totalPrice, customizations }) => ({
           orderId: order.id,
           productId: product.id,
           productName: product.productName,
           productImage: null,
           size: size || null,
+          customizations: customizations || null,
           quantity,
           unitPrice: unitPrice.toFixed(2),
           totalPrice: totalPrice.toFixed(2),
