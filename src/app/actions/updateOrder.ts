@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "../../lib/admin-auth";
-import { db } from "../../lib/db";
+import { transactionDb } from "../../lib/transaction-db";
 import { orderFulfillmentEvents, orders, products } from "../../lib/schema";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -29,7 +29,7 @@ export async function changeOrderStatus(orderId: string, status: string, shipmen
   }
   const nextStatus = status as (typeof statuses)[number];
   try {
-    await db.transaction(async (tx) => {
+    await transactionDb.transaction(async (tx) => {
       const order = await tx.query.orders.findFirst({ where: eq(orders.id, orderId), with: { items: true } });
       if (!order) throw new Error("Order not found.");
       const currentStatus = order.status as (typeof statuses)[number];

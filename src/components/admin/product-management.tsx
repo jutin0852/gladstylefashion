@@ -43,23 +43,23 @@ export function ProductManagement({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-black/15 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search products or SKU"
-          className="h-9 w-full max-w-sm rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className="h-10 w-full max-w-sm border border-black/25 bg-white px-3 text-sm outline-none focus:border-[#d3146d] focus:ring-1 focus:ring-[#d3146d]"
         />
         <Link
           href="/admin/add-product"
-          className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm text-primary-foreground"
+          className="inline-flex h-10 items-center justify-center bg-[#d3146d] px-4 text-xs font-semibold uppercase tracking-[.12em] text-white transition-colors hover:bg-black"
         >
           Add product
         </Link>
       </div>
-      <div className="overflow-hidden rounded-lg border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted text-left">
+      <div className="overflow-x-auto border border-black/15 bg-white">
+        <table className="min-w-[760px] w-full text-sm">
+          <thead className="bg-[#f8dbe9] text-left text-[10px] uppercase tracking-[.12em]">
             <tr>
               <th className="p-3">Product</th>
               <th className="p-3">SKU</th>
@@ -105,7 +105,7 @@ export function ProductManagement({
                   <td className="p-3 text-muted-foreground">
                     {product.sku || "-"}
                   </td>
-                  <td className="p-3">${Number(product.price).toFixed(2)}</td>
+                  <td className="p-3 font-medium">₦{Number(product.price).toLocaleString("en-NG")}</td>
                   <td
                     className={`p-3 ${(product.inventoryCount ?? 0) <= 5 ? "font-medium text-destructive" : ""}`}
                   >

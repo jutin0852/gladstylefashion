@@ -4,6 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "../../lib/admin-auth";
 import { db } from "../../lib/db";
+import { transactionDb } from "../../lib/transaction-db";
 import { categories, products } from "../../lib/schema";
 
 function slugify(value: string) {
@@ -34,7 +35,7 @@ export async function createCategory(values: {
 
 export async function deleteCategory(id: string) {
   await requireAdmin();
-  await db.transaction(async (tx) => {
+    await transactionDb.transaction(async (tx) => {
     await tx.update(products).set({ categoryId: null, updatedAt: new Date() }).where(eq(products.categoryId, id));
     await tx.delete(categories).where(eq(categories.id, id));
   });

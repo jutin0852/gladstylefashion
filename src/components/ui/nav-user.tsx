@@ -1,18 +1,14 @@
 "use client";
 
-import {
-  IconCreditCard,
-  IconDotsVertical,
-  IconLogout,
-  IconNotification,
-  IconUserCircle,
-} from "@tabler/icons-react";
+import { IconDotsVertical, IconExternalLink, IconLogout } from "@tabler/icons-react";
+import { signOut } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -35,6 +31,12 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  async function handleSignOut() {
+    setPending(true);
+    try { await signOut({ fetchOptions: { onSuccess: () => { router.replace("/"); router.refresh(); } } }); } finally { setPending(false); }
+  }
 
   return (
     <SidebarMenu>
@@ -47,7 +49,7 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+              <AvatarFallback className="rounded-lg bg-[#f8dbe9] text-[#d3146d]">{user.name.split(" ").map((name) => name[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
@@ -68,7 +70,7 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg bg-[#f8dbe9] text-[#d3146d]">{user.name.split(" ").map((name) => name[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -79,24 +81,11 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
+            <DropdownMenuItem asChild><a href="/"><IconExternalLink />View storefront</a></DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem disabled={pending} onSelect={(event) => { event.preventDefault(); void handleSignOut(); }}>
               <IconLogout />
-              Log out
+              {pending ? "Logging out…" : "Log out"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

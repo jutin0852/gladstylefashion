@@ -25,6 +25,7 @@ export const user = pgTable("user", {
   // Our custom ecommerce fields
   phone: text("phone"),
   isAdmin: boolean("isAdmin").notNull().default(false),
+  role: text("role").notNull().default("customer"),
 
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
@@ -154,6 +155,45 @@ export const orders = pgTable("orders", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Customer information belongs to the customer and is kept separate from the
+// authentication record so it can grow without changing Better Auth's tables.
+export const customerProfiles = pgTable("customer_profiles", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().unique().references(() => user.id, { onDelete: "cascade" }),
+  marketingEmailOptIn: boolean("marketing_email_opt_in").notNull().default(false),
+  marketingWhatsappOptIn: boolean("marketing_whatsapp_opt_in").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const customerAddresses = pgTable("customer_addresses", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  label: text("label").notNull().default("Home"),
+  recipientName: text("recipient_name").notNull(),
+  phone: text("phone").notNull(),
+  street: text("street").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  postalCode: text("postal_code"),
+  country: text("country").notNull().default("Nigeria"),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const staffInvitations = pgTable("staff_invitations", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  email: text("email").notNull(),
+  role: text("role").notNull().default("staff"),
+  tokenHash: text("token_hash").notNull().unique(),
+  invitedByUserId: text("invited_by_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at").notNull(),
+  acceptedAt: timestamp("accepted_at"),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const orderFulfillmentEvents = pgTable("order_fulfillment_events", {

@@ -9,7 +9,7 @@ export default async function OrdersPage() {
   const cards = [
     {
       description: "Paid sales",
-      title: `$${analytics.cards.totalSales.toFixed(2)}`,
+      title: `₦${analytics.cards.totalSales.toLocaleString("en-NG")}`,
       action: "Live",
       footerMain: "Revenue from paid orders",
       footerSub: "Calculated from the orders table",
@@ -27,7 +27,7 @@ export default async function OrdersPage() {
   return (
     <div className="@container/main flex flex-1 flex-col px-4 py-4 md:py-6 lg:px-6">
       <div className="mb-2 flex items-center justify-between">
-        <h1 className="font-semibold text-base">Order List</h1>
+        <div><p className="text-[10px] font-semibold uppercase tracking-[.14em] text-[#d3146d]">Fulfilment</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">Orders</h1><p className="mt-1 text-sm text-muted-foreground">Open an order to update its delivery status and tracking details.</p></div>
       </div>
 
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">

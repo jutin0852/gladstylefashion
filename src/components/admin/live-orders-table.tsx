@@ -14,9 +14,9 @@ import {
 
 export function LiveOrdersTable({ orders }: { orders: AdminOrder[] }) {
   return (
-    <div className="overflow-hidden rounded-lg border">
+    <div className="overflow-x-auto border border-black/15 bg-white">
       <Table>
-        <TableHeader className="bg-muted">
+        <TableHeader className="bg-[#f8dbe9]">
           <TableRow>
             <TableHead>Order</TableHead>
             <TableHead>Customer</TableHead>
@@ -49,7 +49,7 @@ export function LiveOrdersTable({ orders }: { orders: AdminOrder[] }) {
                   </div>
                 </TableCell>
                 <TableCell>{order.itemCount}</TableCell>
-                <TableCell>${Number(order.totalAmount).toFixed(2)}</TableCell>
+                <TableCell>₦{Number(order.totalAmount).toLocaleString("en-NG")}</TableCell>
                 <TableCell>
                   <Badge
                     variant={

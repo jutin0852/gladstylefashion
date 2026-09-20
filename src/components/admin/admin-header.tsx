@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import AdminHeaderTitle from "./admin-header-title";
@@ -14,18 +13,7 @@ export function AdminHeader() {
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <AdminHeaderTitle />
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
-            <a
-              href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
-              rel="noopener noreferrer"
-              target="_blank"
-              className="dark:text-foreground"
-            >
-              GitHub
-            </a>
-          </Button>
-        </div>
+        <div className="ml-auto hidden text-[10px] font-semibold uppercase tracking-[.14em] text-[#d3146d] sm:block">Glad Style Fashion</div>
       </div>
     </header>
   );

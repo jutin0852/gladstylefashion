@@ -4,8 +4,8 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import { auth } from "../../lib/auth";
-import { db } from "../../lib/db";
-import { orderItems, orders, products } from "../../lib/schema";
+import { transactionDb } from "../../lib/transaction-db";
+import { orderItems, orders, products, productImages } from "../../lib/schema";
 
 const checkoutSchema = z.object({
   customerName: z.string().trim().min(2).max(100),
@@ -15,7 +15,7 @@ const checkoutSchema = z.object({
   city: z.string().trim().min(2).max(100),
   state: z.string().trim().min(2).max(100),
   postalCode: z.string().trim().min(2).max(20),
-  country: z.string().trim().min(2).max(100),
+  country: z.literal("Nigeria"),
   items: z
     .array(
       z.object({
@@ -57,7 +57,7 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
   });
 
   if (!parsed.success) {
-    return { success: false, message: "Please complete all checkout fields." };
+    return { success: false, message: "Please complete all checkout fields. We currently deliver within Nigeria only." };
   }
 
   const quantities = new Map<string, number>();
@@ -71,7 +71,7 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
 
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    const result = await db.transaction(async (tx) => {
+  const result = await transactionDb.transaction(async (tx) => {
       const catalogProducts = await tx
         .select()
         .from(products)
@@ -86,6 +86,11 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
       const productsById = new Map(
         catalogProducts.map((product) => [product.id, product]),
       );
+      const catalogImages = await tx.select().from(productImages).where(inArray(productImages.productId, productIds));
+      const firstImageByProduct = new Map<string, string>();
+      for (const image of catalogImages.sort((a, b) => a.displayOrder - b.displayOrder)) {
+        if (!firstImageByProduct.has(image.productId)) firstImageByProduct.set(image.productId, image.imageUrl);
+      }
       const lineItems = parsed.data.items.map((item) => {
         const product = productsById.get(item.productId);
         if (!product) {
@@ -145,7 +150,7 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
           orderId: order.id,
           productId: product.id,
           productName: product.productName,
-          productImage: null,
+          productImage: firstImageByProduct.get(product.id) || null,
           size: size || null,
           customizations: customizations || null,
           quantity,

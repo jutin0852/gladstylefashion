@@ -156,15 +156,27 @@ export default function AddProduct() {
   };
 
   return (
-    <section className="">
+    <section className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mb-8 flex flex-col gap-4 border-b border-black/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d3146d]">Catalogue</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-black sm:text-4xl">Add a product</h1>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-black/60">Build a complete listing with the details customers need before it goes live.</p>
+        </div>
+        <p className="max-w-xs border-l-4 border-[#d3146d] bg-[#f9e4ee] px-4 py-3 text-xs leading-5 text-black/70">Add product information, stock, and up to five product images before publishing.</p>
+      </div>
       <form
         onSubmit={form.handleSubmit((data) => onFormSubmit(data, images))}
         id="add-product-form"
-        className="my-5"
+        className="pb-8"
       >
-        <FieldGroup className="md:flex md:flex-row px-5">
-          <section className=" shadow p-6 w-full flex flex-col gap-4 rounded">
-            <h2 className="text-xl font-semibold">Basic Details</h2>
+        <FieldGroup className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,.75fr)]">
+          <section className="flex w-full flex-col gap-5 border border-black/15 bg-white p-5 shadow-none sm:p-7">
+            <div className="border-b border-black/15 pb-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d3146d]">Product details</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight">The essentials</h2>
+              <p className="mt-1 text-sm leading-6 text-black/60">Name the piece clearly and describe the fit, silhouette, and standout details.</p>
+            </div>
             <Controller
               name="productName"
               control={form.control}
@@ -205,6 +217,10 @@ export default function AddProduct() {
               )}
             />
 
+            <div className="border-t border-black/15 pt-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d3146d]">Pricing &amp; inventory</p>
+              <p className="mt-1 text-sm text-black/60">Set the selling price, internal cost, and available units.</p>
+            </div>
             <Controller
               name="price"
               control={form.control}
@@ -315,13 +331,17 @@ export default function AddProduct() {
                 </Field>
               )}
             />
+            <div className="border-t border-black/15 pt-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d3146d]">Product options</p>
+              <p className="mt-1 text-sm text-black/60">Add the category, sizes, fabric, and care information.</p>
+            </div>
             <Controller
               name="categoryId"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="categoryId">Category</FieldLabel>
-                  <select {...field} id="categoryId" className="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                  <select {...field} id="categoryId" className="h-10 w-full border border-black/20 bg-white px-3 text-sm outline-none transition focus:border-[#d3146d] focus:ring-2 focus:ring-[#d3146d]/20">
                     <option value="">Uncategorised</option>
                     {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                   </select>
@@ -367,16 +387,17 @@ export default function AddProduct() {
                 </Field>
               )}
             />
-            <div className="flex gap-6 text-sm">
-              <label className="flex items-center gap-2"><input type="checkbox" defaultChecked {...form.register("isActive")} /> Publish product</label>
-              <label className="flex items-center gap-2"><input type="checkbox" {...form.register("featured")} /> Featured</label>
+            <div className="flex flex-col gap-3 border-t border-black/15 pt-5 text-sm sm:flex-row sm:gap-6">
+              <label className="flex items-center gap-2 font-medium"><input className="accent-[#d3146d]" type="checkbox" defaultChecked {...form.register("isActive")} /> Publish product</label>
+              <label className="flex items-center gap-2 font-medium"><input className="accent-[#d3146d]" type="checkbox" {...form.register("featured")} /> Feature on storefront</label>
             </div>
             {/* add inventory count */}
 
-            <Field orientation="horizontal" className="my-5">
+            <Field orientation="horizontal" className="mt-2 flex flex-col-reverse gap-3 border-t border-black/15 pt-5 sm:flex-row sm:items-center sm:justify-between">
               <Button
                 type="button"
                 variant="outline"
+                className="w-full border-black/25 sm:w-auto"
                 onClick={() => {
                   form.reset();
                   toast.success("Form has been reset", {
@@ -390,6 +411,7 @@ export default function AddProduct() {
                 type="submit"
                 form="add-product-form"
                 disabled={isSubmitting}
+                className="w-full bg-[#d3146d] text-white hover:bg-black sm:w-auto"
               >
                 {isSubmitting ? (
                   <span className="flex flex-nowrap gap-2">
@@ -409,33 +431,36 @@ export default function AddProduct() {
             </Field>
           </section>
 
-          <section className=" shadow px-6 pb-6 w-full rounded ">
-            <h2 className="font-semibold text-xl my-5">Upload Product Image</h2>
+          <section className="w-full border border-black/15 bg-white p-5 shadow-none sm:p-7 lg:sticky lg:top-6">
+            <div className="border-b border-black/15 pb-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d3146d]">Product photography</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight">Add images</h2>
+              <p className="mt-1 text-sm leading-6 text-black/60">Upload the main image first. It will lead the product card and details page.</p>
+            </div>
             {/* preview section */}
             {previews.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="mt-5 flex flex-wrap gap-3">
                 {previews.map((src, i) => {
                   if (i === 0)
                     return (
                       <div
                         key={i}
-                        className="relative p-10  border-dashed border-gray-400 rounded border"
+                        className="relative w-full overflow-hidden border border-black/15 bg-[#f9e4ee] p-3"
                       >
                         <Image
                           src={src}
                           alt={`preview-${i}`}
-                          className="w-full h-74 object-cover rounded border"
-                          width={100}
-                          height={100}
+                          className="aspect-[4/5] h-auto w-full object-cover"
+                          width={720}
+                          height={900}
                         />
-                        <IconCircleX
-                          onClick={() => removeImage(i)}
-                          stroke={1}
-                          className="absolute right-0.5 top-0.5 cursor-pointer text-gray-500"
-                        />
+                        <button type="button" onClick={() => removeImage(i)} aria-label="Remove primary image" className="absolute right-5 top-5 rounded-full bg-white p-1.5 text-black shadow-sm transition hover:bg-[#d3146d] hover:text-white">
+                          <IconCircleX stroke={1.5} size={20} />
+                        </button>
                         <button
+                          type="button"
                           onClick={() => replaceImage(i)}
-                          className="border rounded absolute right-0 bottom-0"
+                          className="absolute bottom-5 right-5 bg-white px-3 py-2 text-xs font-semibold text-black shadow-sm transition hover:bg-black hover:text-white"
                         >
                           <IconRefresh className="inline" />{" "}
                           <span>Replace</span>
@@ -443,23 +468,21 @@ export default function AddProduct() {
                       </div>
                     );
                   return (
-                    <span
+                    <div
                       key={i}
-                      className="relative mr-1.5 p-5 border-dashed border-gray-400 rounded border self-center"
+                      className="relative w-[calc(50%-0.375rem)] overflow-hidden border border-black/15 bg-[#f9e4ee] p-2 sm:w-[calc(33.333%-0.5rem)]"
                     >
                       <Image
                         src={src}
                         alt={`preview-${i}`}
-                        className="w-24 h-24 object-cover rounded border"
-                        width={100}
-                        height={100}
+                        className="aspect-square h-auto w-full object-cover"
+                        width={240}
+                        height={240}
                       />
-                      <IconCircleX
-                        onClick={() => removeImage(i)}
-                        stroke={1}
-                        className="absolute right-0.5 top-0.5 cursor-pointer text-gray-500"
-                      />
-                    </span>
+                      <button type="button" onClick={() => removeImage(i)} aria-label={`Remove image ${i + 1}`} className="absolute right-3 top-3 rounded-full bg-white p-1 text-black shadow-sm transition hover:bg-[#d3146d] hover:text-white">
+                        <IconCircleX stroke={1.5} size={18} />
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -468,10 +491,10 @@ export default function AddProduct() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="border border-dashed border-gray-400 p-3 rounded text-gray-600 hover:bg-gray-100"
+                className="mt-5 flex w-full items-center justify-center border border-dashed border-black/30 bg-[#fcfbfc] px-4 py-5 text-sm font-semibold text-black transition hover:border-[#d3146d] hover:bg-[#f9e4ee]"
               >
-                <IconCirclePlus className="inline mr-2" />
-                Add Image ({images.length}/5)
+                <IconCirclePlus className="mr-2" size={20} />
+                Add images ({images.length}/5)
               </button>
             )}
             {form.formState.errors.images && (

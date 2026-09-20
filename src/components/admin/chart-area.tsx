@@ -154,7 +154,7 @@ export function ChartAreaInteractive({
 
   const filteredData = data.filter((item) => {
     const date = new Date(item.date);
-    const referenceDate = new Date("2024-06-30");
+    const referenceDate = new Date();
     let daysToSubtract = 90;
     if (timeRange === "30d") {
       daysToSubtract = 30;
@@ -167,7 +167,7 @@ export function ChartAreaInteractive({
   });
 
   return (
-    <Card className="@container/card">
+    <Card className="@container/card rounded-none border-black/15 bg-white shadow-none">
       <CardHeader>
         <CardTitle>Store performance</CardTitle>
         <CardDescription>

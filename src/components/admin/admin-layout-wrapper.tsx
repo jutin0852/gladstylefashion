@@ -9,9 +9,11 @@ import { Toaster } from "@/components/ui/sonner";
 export function AdminShell({
   children,
   defaultOpen,
+  user,
 }: {
   children: React.ReactNode;
   defaultOpen: boolean;
+  user: { name: string; email: string; role: string };
 }) {
   return (
     <SidebarProvider
@@ -23,8 +25,8 @@ export function AdminShell({
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="floating" />
-      <SidebarInset>
+      <AppSidebar variant="inset" user={user} />
+      <SidebarInset className="bg-[#fcfbfc]">
         <AdminHeader />
         <div className="flex flex-1 flex-col">{children}</div>
         <Toaster />

@@ -1,28 +1,12 @@
 "use client";
 
-import {
-  IconDots,
-  IconFolder,
-  IconShare3,
-  IconTrash,
-  type Icon,
-} from "@tabler/icons-react";
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { type Icon } from "@tabler/icons-react";
 import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 
@@ -35,7 +19,6 @@ export function NavDocuments({
     icon: Icon;
   }[];
 }) {
-  const { isMobile } = useSidebar();
   const pathname = usePathname();
 
   return (
@@ -50,39 +33,6 @@ export function NavDocuments({
                 <span>{item.name}</span>
               </a>
             </SidebarMenuButton>
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                asChild
-                id={`document-actions-${item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-              >
-                <SidebarMenuAction
-                  showOnHover
-                  className="data-[state=open]:bg-accent rounded-sm"
-                >
-                  <IconDots />
-                  <span className="sr-only">More</span>
-                </SidebarMenuAction>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-24 rounded-lg"
-                side={isMobile ? "bottom" : "right"}
-                align={isMobile ? "end" : "start"}
-              >
-                <DropdownMenuItem>
-                  <IconFolder />
-                  <span>Open</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <IconShare3 />
-                  <span>Share</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive">
-                  <IconTrash />
-                  <span>Delete</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </SidebarMenuItem>
         ))}
       </SidebarMenu>

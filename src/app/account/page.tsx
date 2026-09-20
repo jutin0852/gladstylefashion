@@ -1,0 +1,10 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { desc, eq } from "drizzle-orm";
+import { getSessionUser } from "@/lib/admin-auth";
+import { db } from "@/lib/db";
+import { customerAddresses, customerProfiles, orders } from "@/lib/schema";
+import { AccountDashboard } from "@/components/account/account-dashboard";
+import SignOutButton from "@/components/auth/signOut";
+
+export default async function AccountPage() { const currentUser = await getSessionUser(); if (!currentUser) redirect("/account/sign-in"); const [profile] = await db.select().from(customerProfiles).where(eq(customerProfiles.userId, currentUser.id)).limit(1); const addresses = await db.select().from(customerAddresses).where(eq(customerAddresses.userId, currentUser.id)).orderBy(desc(customerAddresses.isDefault), desc(customerAddresses.createdAt)); const customerOrders = await db.select().from(orders).where(eq(orders.userId, currentUser.id)).orderBy(desc(orders.createdAt)); return <main className="min-h-screen bg-white text-[#111]"><header className="flex items-center justify-between gap-4 border-b border-black px-5 py-4 sm:px-10"><Link href="/" className="text-[11px] font-semibold uppercase tracking-[.15em] text-[#d3146d] underline">Back to store</Link><SignOutButton /></header><AccountDashboard account={currentUser} profile={profile || null} addresses={addresses} orderCount={customerOrders.length}/>{customerOrders.length > 0 && <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-10"><h2 className="border-b border-black pb-4 text-2xl font-medium">Order history</h2><div className="divide-y divide-black/15">{customerOrders.map((order) => <div key={order.id} className="flex flex-wrap justify-between gap-3 py-5 text-sm"><div><p className="font-medium">{order.orderNumber}</p><p className="mt-1 text-black/60">{order.createdAt?.toLocaleDateString("en-NG", { dateStyle: "medium" })}</p></div><p className="capitalize">{order.status}</p><p className="font-medium">₦{Number(order.totalAmount).toLocaleString("en-NG")}</p></div>)}</div></section>}</main>; }

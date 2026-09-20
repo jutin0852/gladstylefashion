@@ -8,9 +8,9 @@ export default async function Page({
 }: {
   children: React.ReactNode;
 }) {
-  await requireAdmin();
+  const currentUser = await requireAdmin();
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
-  return <AdminShell defaultOpen={defaultOpen}>{children}</AdminShell>;
+  return <AdminShell defaultOpen={defaultOpen} user={{ name: currentUser.name, email: currentUser.email, role: currentUser.role }}>{children}</AdminShell>;
 }

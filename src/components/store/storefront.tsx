@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, Menu, Search, ShoppingBag, X } from "lucide-react";
+import { ArrowRight, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import BrandLogo from "./brand-logo";
 import { primaryProductAlt, primaryProductImage } from "./brand-assets";
 import { formatStorePrice } from "./currency";
 import CartDrawer from "./cart-drawer";
 import { useCart, type StoreProduct } from "./cart-context";
-import { useCartFeedback } from "./use-cart-feedback";
 
 export default function Storefront({ products }: { products: StoreProduct[] }) {
   const [query, setQuery] = useState("");
@@ -15,7 +14,6 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { cartCount } = useCart();
-  const { feedback, addWithFeedback } = useCartFeedback();
 
   const categories = useMemo(() => {
     const names = products
@@ -40,7 +38,7 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
   return (
     <main className="min-h-screen bg-white text-[#111111]">
       <div className="bg-[#d3146d] px-5 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-white sm:text-[11px]">
-        Glad Style Fashion • Ready-to-wear from Lagos
+        Glad Style Fashion | Ready-to-wear from Lagos
       </div>
 
       <header className="relative mx-auto flex max-w-[1440px] items-center justify-between border-b border-black px-5 py-4 lg:px-10">
@@ -56,10 +54,9 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
         >
           <a href="#shop" onClick={() => setMenuOpen(false)} className="py-3 lg:py-0">Shop</a>
           <a href="#story" onClick={() => setMenuOpen(false)} className="py-3 lg:py-0">Our story</a>
-          <a href="#delivery" onClick={() => setMenuOpen(false)} className="py-3 lg:py-0">Delivery</a>
         </nav>
         <a href="#top" className="absolute left-1/2 -translate-x-1/2 bg-white px-2" aria-label="Glad Style Fashion home">
-          <BrandLogo className="h-auto w-32 sm:w-44" />
+          <BrandLogo className="h-auto w-24 sm:w-44" />
         </a>
         <div className="flex items-center gap-3">
           <label className="hidden items-center gap-2 border-b border-black pb-1 lg:flex">
@@ -72,6 +69,9 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
               aria-label="Search products"
             />
           </label>
+          <a href="/account" className="grid size-10 place-items-center border border-black transition-colors hover:bg-black hover:text-white" aria-label="Your account">
+            <UserRound size={18} strokeWidth={1.5} />
+          </a>
           <button
             className="relative grid size-10 place-items-center border border-black transition-colors hover:bg-black hover:text-white active:scale-[0.98]"
             onClick={() => setCartOpen(true)}
@@ -84,32 +84,33 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
       </header>
 
       <section id="top" className="mx-auto grid max-w-[1440px] border-x border-black lg:grid-cols-[0.94fr_1.06fr]">
-        <div className="flex min-h-[480px] flex-col justify-between border-b border-black px-5 py-8 sm:px-10 sm:py-12 lg:min-h-[650px] lg:border-b-0 lg:border-r">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">The first ready-to-wear edit</p>
+        <div className="flex min-h-[410px] flex-col justify-between border-b border-black px-5 py-8 sm:min-h-[480px] sm:px-10 sm:py-12 lg:min-h-[650px] lg:border-b-0 lg:border-r">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">Ready-to-wear for your next plan</p>
           <div className="max-w-xl py-10">
             <h1 className="text-5xl font-medium leading-[0.92] tracking-[-0.065em] sm:text-7xl lg:text-[84px]">Dress like the moment is yours.</h1>
-            <p className="mt-7 max-w-md text-base leading-7 text-black/65">Made for plans, pictures, and every place in between. Discover polished pieces ready to wear now.</p>
+            <p className="mt-7 max-w-md text-base leading-7 text-black/65">New dresses with colour, ease, and the confidence to make an entrance.</p>
             <a href="#shop" className="mt-9 inline-flex items-center gap-3 bg-black px-6 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#d3146d] active:scale-[0.98]">
               Shop the collection <ArrowRight size={16} strokeWidth={1.5} />
             </a>
           </div>
-          <p className="max-w-xs border-t border-black pt-4 text-xs leading-5 text-black/60">A Lagos fashion house for women who like their wardrobe to arrive with presence.</p>
+          <p className="max-w-xs border-t border-black pt-4 text-xs leading-5 text-black/60">A Lagos fashion house for women who want getting dressed to feel simple and special.</p>
         </div>
-        <div className="relative min-h-[540px] bg-[#f8dbe9] p-4 sm:p-7 lg:min-h-[650px]">
+        <div className="relative min-h-[420px] bg-[#f8dbe9] p-4 sm:min-h-[540px] sm:p-7 lg:min-h-[650px]">
           <img src={primaryProductImage} alt={primaryProductAlt} className="h-full w-full object-cover object-center" />
           <div className="absolute bottom-7 left-7 bg-white px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.15em] sm:bottom-10 sm:left-10">New collection</div>
         </div>
       </section>
 
       <section className="border-y border-black bg-[#d3146d] text-white">
-        <div className="mx-auto grid max-w-[1440px] divide-y divide-white/45 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          <p className="px-5 py-5 text-center text-xs font-medium uppercase tracking-[0.14em] sm:px-8">Ready-to-wear pieces</p>
-          <p className="px-5 py-5 text-center text-xs font-medium uppercase tracking-[0.14em] sm:px-8">Shopping from Lagos</p>
-          <p className="px-5 py-5 text-center text-xs font-medium uppercase tracking-[0.14em] sm:px-8">UK and US customers welcome</p>
+        <p className="px-5 py-4 text-center text-[10px] font-medium uppercase tracking-[0.12em] sm:hidden">Ready-to-wear dresses · Lagos · Nigeria delivery: 5–7 working days</p>
+        <div className="mx-auto hidden max-w-[1440px] sm:grid sm:grid-cols-3 sm:divide-x sm:divide-white/45">
+          <p className="px-8 py-5 text-center text-xs font-medium uppercase tracking-[0.14em]">Ready-to-wear dresses</p>
+          <p className="px-8 py-5 text-center text-xs font-medium uppercase tracking-[0.14em]">Based in Lagos</p>
+          <p className="px-8 py-5 text-center text-xs font-medium uppercase tracking-[0.14em]">Nigeria delivery · 5–7 working days</p>
         </div>
       </section>
 
-      <section id="shop" className="mx-auto max-w-[1440px] px-5 py-16 sm:px-10 lg:py-24">
+      <section id="shop" className="mx-auto max-w-[1440px] px-5 py-12 sm:px-10 sm:py-16 lg:py-24">
         <div className="max-w-2xl">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">Shop ready to wear</p>
           <h2 className="mt-4 text-4xl font-medium leading-[0.98] tracking-[-0.055em] sm:text-6xl">Pieces made to be noticed.</h2>
@@ -146,14 +147,10 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
                 <div className="flex items-start justify-between gap-3 border-b border-black py-4">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[#d3146d]">{product.category?.name || "Glad Style Fashion"}</p>
-                    <h3 className="mt-1 text-lg font-medium leading-tight">{product.productName}</h3>
+                    <h3 className="mt-1 text-lg font-medium leading-tight"><a href={`/product/${product.slug}`} className="hover:text-[#d3146d]">{product.productName}</a></h3>
                   </div>
                   <p className="pt-4 text-sm font-medium">{formatStorePrice(product.price)}</p>
                 </div>
-                <button onClick={() => addWithFeedback(product)} className="mt-3 w-full border border-black px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors hover:border-[#d3146d] hover:bg-[#d3146d] hover:text-white active:scale-[0.98]">
-                  {feedback?.productId === product.id && feedback.success ? "Added to bag" : "Add to bag"}
-                </button>
-                <p role="status" aria-live="polite" className="min-h-5 pt-2 text-xs text-[#d3146d]">{feedback?.productId === product.id && !feedback.success ? feedback.message : ""}</p>
               </article>
             ))}
           </div>
@@ -170,20 +167,17 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
         </div>
       </section>
 
-      <section id="delivery" className="mx-auto max-w-[1440px] px-5 py-16 sm:px-10 lg:py-24">
-        <div className="grid gap-10 border-t border-black pt-6 md:grid-cols-3">
-          <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">01</p><h2 className="mt-3 text-2xl font-medium tracking-[-0.03em]">Choose your piece</h2><p className="mt-3 text-sm leading-6 text-black/65">Select the style and available size that works for you.</p></div>
-          <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">02</p><h2 className="mt-3 text-2xl font-medium tracking-[-0.03em]">Place your order</h2><p className="mt-3 text-sm leading-6 text-black/65">Enter your delivery details at checkout and we will confirm the next steps.</p></div>
-          <div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">03</p><h2 className="mt-3 text-2xl font-medium tracking-[-0.03em]">Wear it your way</h2><p className="mt-3 text-sm leading-6 text-black/65">Dress it up, keep it simple, and make it entirely yours.</p></div>
-        </div>
-      </section>
-
       <footer className="border-t border-black bg-white">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-8 px-5 py-10 sm:px-10 md:flex-row md:items-end md:justify-between">
           <BrandLogo className="h-auto w-48" />
           <div className="flex flex-col gap-2 text-xs font-medium uppercase tracking-[0.13em] text-black/60 md:items-end">
             <span>Ready-to-wear from Lagos</span>
-            <span>Instagram and customer support coming soon</span>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 md:justify-end">
+              <a href="/shipping-delivery" className="hover:text-[#d3146d]">Shipping & delivery</a>
+              <a href="/returns-exchanges" className="hover:text-[#d3146d]">Returns & exchanges</a>
+              <a href="/privacy" className="hover:text-[#d3146d]">Privacy</a>
+              <a href="/terms" className="hover:text-[#d3146d]">Terms</a>
+            </div>
           </div>
         </div>
       </footer>

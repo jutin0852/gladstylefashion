@@ -11,7 +11,7 @@ export default async function Dashboard() {
   const cards = [
     {
       description: "Paid sales",
-      title: `$${analytics.cards.totalSales.toFixed(2)}`,
+      title: `₦${analytics.cards.totalSales.toLocaleString("en-NG")}`,
       action: "Live",
       footerMain: "Revenue from paid orders",
       footerSub: "Calculated from the orders table",
@@ -26,7 +26,7 @@ export default async function Dashboard() {
       trend: "up" as const,
     },
     {
-      description: "Customers",
+      description: "Customer accounts",
       title: `${analytics.cards.customers}`,
       action: "Live",
       footerMain: "Registered customer accounts",

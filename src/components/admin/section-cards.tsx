@@ -1,6 +1,4 @@
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
-
-import { Badge } from "@/components/ui/badge";
+import { IconAlertTriangle, IconArrowUpRight } from "@tabler/icons-react";
 import {
   Card,
   CardAction,
@@ -21,30 +19,18 @@ export type CardData = {
 
 export function SectionCards({ cardData }: { cardData: CardData[] }) {
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       {cardData.map((card, i) => (
-        <Card className="@container/card" key={i} data-slot="card">
-          <CardHeader>
-            <CardDescription>{card.description}</CardDescription>
-            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+        <Card className="@container/card rounded-none border-black/15 bg-white shadow-none" key={i} data-slot="card">
+          <CardHeader className="gap-2">
+            <CardDescription className="text-[10px] font-semibold uppercase tracking-[.14em] text-black/55">{card.description}</CardDescription>
+            <CardTitle className="text-3xl font-semibold tabular-nums tracking-tight">
               {card.title}
             </CardTitle>
-            <CardAction>
-              <Badge variant="outline">
-                <IconTrendingUp />
-                {card.action}
-              </Badge>
-            </CardAction>
+            <CardAction className={card.trend === "down" ? "text-[#d3146d]" : "text-black/50"}>{card.trend === "down" ? <IconAlertTriangle className="size-4" /> : <IconArrowUpRight className="size-4" />}</CardAction>
           </CardHeader>
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
-            <div className="line-clamp-1 flex gap-2 font-medium">
-              {card.footerMain}
-              {card.trend == "up" ? (
-                <IconTrendingUp className="size-4" />
-              ) : (
-                <IconTrendingDown className="size-4" />
-              )}
-            </div>
+            <div className="line-clamp-1 font-medium">{card.footerMain}</div>
             <div className="text-muted-foreground">{card.footerSub}</div>
           </CardFooter>
         </Card>

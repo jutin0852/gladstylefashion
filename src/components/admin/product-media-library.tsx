@@ -49,7 +49,10 @@ export function ProductMediaLibrary({
                   {product.images.length}/5 images
                 </span>
               </div>
-              <ProductMediaUpload productId={product.id} />
+              <ProductMediaUpload
+                productId={product.id}
+                currentImageCount={product.images.length}
+              />
             </div>
           ))}
       </div>
