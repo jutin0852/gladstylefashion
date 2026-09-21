@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   },
   description: "Shop expressive ready-to-wear dresses, boubous, and custom occasion pieces from Glad Style Fashion in Nigeria.",
   applicationName: "Glad Style Fashion",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
   keywords: ["Glad Style Fashion", "Nigerian fashion", "ready-to-wear Nigeria", "Lagos fashion", "boubou", "custom dresses"],
   openGraph: {
     type: "website",
