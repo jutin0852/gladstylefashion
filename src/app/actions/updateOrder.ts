@@ -63,3 +63,26 @@ export async function changeOrderStatus(orderId: string, status: string, shipmen
   revalidatePath(`/admin/orders/${orderId}`);
   return { success: true };
 }
+
+export async function clearAbandonedCheckout(orderId: string) {
+  await requireAdmin();
+  try {
+    await transactionDb.transaction(async (tx) => {
+      const order = await tx.query.orders.findFirst({ where: eq(orders.id, orderId) });
+      if (!order) throw new Error("Checkout record not found.");
+      if (order.status !== "pending" || order.paymentStatus === "paid") {
+        throw new Error("Only unpaid, unfulfilled checkout records can be removed.");
+      }
+      const ageInMinutes = order.createdAt ? (Date.now() - order.createdAt.getTime()) / 60_000 : 31;
+      if (order.paymentStatus === "pending" && ageInMinutes < 30) {
+        throw new Error("Wait 30 minutes before clearing a pending payment so an active checkout is not removed.");
+      }
+      await tx.delete(orders).where(eq(orders.id, orderId));
+    });
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Unable to remove this checkout record." };
+  }
+  revalidatePath("/admin");
+  revalidatePath("/admin/orders");
+  return { success: true };
+}
