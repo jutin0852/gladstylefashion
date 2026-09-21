@@ -2,10 +2,11 @@
 
 import { headers } from "next/headers";
 import { z } from "zod";
-import { and, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { auth } from "../../lib/auth";
 import { transactionDb } from "../../lib/transaction-db";
 import { orderItems, orders, products, productImages } from "../../lib/schema";
+import { initializePaystackPayment } from "@/lib/paystack";
 
 const checkoutSchema = z.object({
   customerName: z.string().trim().min(2).max(100),
@@ -34,8 +35,17 @@ const checkoutSchema = z.object({
 });
 
 export type CheckoutResult =
-  | { success: true; orderNumber: string }
+  | { success: true; authorizationUrl: string }
   | { success: false; message: string };
+
+function createSiteUrl(requestHeaders: Headers) {
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL;
+  if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+  const host = requestHeaders.get("x-forwarded-host") || requestHeaders.get("host");
+  if (!host) throw new Error("We could not determine the checkout address.");
+  const protocol = requestHeaders.get("x-forwarded-proto") || "http";
+  return `${protocol}://${host}`;
+}
 
 export async function createOrder(formData: FormData): Promise<CheckoutResult> {
   const parsed = checkoutSchema.safeParse({
@@ -70,8 +80,9 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
   const productIds = [...quantities.keys()];
 
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-  const result = await transactionDb.transaction(async (tx) => {
+    const requestHeaders = await headers();
+    const session = await auth.api.getSession({ headers: requestHeaders });
+    const result = await transactionDb.transaction(async (tx) => {
       const catalogProducts = await tx
         .select()
         .from(products)
@@ -125,6 +136,7 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
         0,
       );
       const orderNumber = `GS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      const paymentReference = `GS-${crypto.randomUUID().replaceAll("-", "")}`;
 
       const [order] = await tx
         .insert(orders)
@@ -142,8 +154,10 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
             postalCode: parsed.data.postalCode,
             country: parsed.data.country,
           },
+          paymentIntentId: paymentReference,
+          paymentStatus: "pending",
         })
-        .returning({ id: orders.id, orderNumber: orders.orderNumber });
+        .returning({ id: orders.id, orderNumber: orders.orderNumber, paymentIntentId: orders.paymentIntentId, totalAmount: orders.totalAmount });
 
       await tx.insert(orderItems).values(
         lineItems.map(({ product, quantity, size, unitPrice, totalPrice, customizations }) => ({
@@ -159,30 +173,22 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
         })),
       );
 
-      for (const item of lineItems) {
-        const updated = await tx
-          .update(products)
-          .set({
-            inventoryCount: sql`${products.inventoryCount} - ${item.quantity}`,
-          })
-          .where(
-            and(
-              eq(products.id, item.product.id),
-              gte(products.inventoryCount, item.quantity),
-            ),
-          )
-          .returning({ id: products.id });
-        if (updated.length !== 1) {
-          throw new Error(
-            `${item.product.productName} sold out while you were checking out.`,
-          );
-        }
-      }
-
       return order;
     });
-
-    return { success: true, orderNumber: result.orderNumber };
+    try {
+      const payment = await initializePaystackPayment({
+        email: parsed.data.customerEmail,
+        amount: Math.round(Number(result.totalAmount) * 100),
+        reference: result.paymentIntentId!,
+        callbackUrl: `${createSiteUrl(requestHeaders)}/checkout/verify?reference=${encodeURIComponent(result.paymentIntentId!)}`,
+        orderId: result.id,
+        orderNumber: result.orderNumber,
+      });
+      return { success: true, authorizationUrl: payment.authorization_url };
+    } catch (error) {
+      await transactionDb.update(orders).set({ paymentStatus: "failed", updatedAt: new Date() }).where(eq(orders.id, result.id));
+      throw error;
+    }
   } catch (error) {
     return {
       success: false,

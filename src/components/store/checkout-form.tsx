@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Minus, Plus, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ShoppingBag } from "lucide-react";
 import { createOrder } from "../../app/actions/createOrder";
 import BrandLogo from "./brand-logo";
 import { primaryProductAlt, primaryProductImage } from "./brand-assets";
@@ -21,11 +21,9 @@ const fields = [
 ] as const;
 
 export default function CheckoutForm({ initialCustomer }: { initialCustomer?: { name?: string | null; email?: string | null; phone?: string | null; street?: string | null; city?: string | null; state?: string | null; postalCode?: string | null } }) {
-  const { cart, cartTotal, updateQuantity, clearCart } = useCart();
+  const { cart, cartTotal, updateQuantity } = useCart();
   const [message, setMessage] = useState("");
-  const [success, setSuccess] = useState(false);
   const [pending, setPending] = useState(false);
-  const [completedEmail, setCompletedEmail] = useState("");
 
   async function submit(formData: FormData) {
     setPending(true);
@@ -36,39 +34,13 @@ export default function CheckoutForm({ initialCustomer }: { initialCustomer?: { 
       size: item.size,
       customizations: item.customizations,
     }))));
-    setCompletedEmail(String(formData.get("customerEmail") || ""));
     const result = await createOrder(formData);
-    setPending(false);
     if (result.success) {
-      clearCart();
-      setSuccess(true);
-      setMessage(`Order ${result.orderNumber} has been received. We will confirm the next steps using the contact details you provided.`);
+      window.location.assign(result.authorizationUrl);
     } else {
+      setPending(false);
       setMessage(result.message);
     }
-  }
-
-  if (success) {
-    return (
-      <main className="min-h-screen bg-white px-5 py-5 text-[#111111] sm:px-10">
-        <div className="mx-auto flex min-h-[calc(100dvh-40px)] max-w-[960px] flex-col border border-black">
-          <header className="flex items-center justify-between border-b border-black px-5 py-4 sm:px-8">
-            <Link href="/" aria-label="Glad Style Fashion home"><BrandLogo className="h-auto w-36 sm:w-44" /></Link>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d3146d]">Order received</span>
-          </header>
-          <div className="flex flex-1 flex-col items-center justify-center px-5 py-16 text-center">
-            <div className="grid size-14 place-items-center rounded-full bg-[#d3146d] text-white"><Check size={26} strokeWidth={1.75} /></div>
-            <p className="mt-7 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">Thank you</p>
-            <h1 className="mt-4 max-w-xl text-5xl font-medium leading-[0.95] tracking-[-0.06em] sm:text-7xl">Your order is in.</h1>
-            <p className="mt-6 max-w-md text-sm leading-7 text-black/65">{message}</p>
-            <Link href={`/account/register${completedEmail ? `?email=${encodeURIComponent(completedEmail)}` : ""}`} className="mt-5 text-xs font-semibold uppercase tracking-[0.14em] text-[#d3146d] underline">Create an account to keep your delivery details</Link>
-            <Link href="/" className="mt-10 inline-flex items-center gap-3 bg-black px-6 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#d3146d]">
-              <ArrowLeft size={16} strokeWidth={1.5} /> Continue shopping
-            </Link>
-          </div>
-        </div>
-      </main>
-    );
   }
 
   if (cart.length === 0) {
@@ -123,7 +95,7 @@ export default function CheckoutForm({ initialCustomer }: { initialCustomer?: { 
             </div>
             {message && <p className="mt-6 border-l-4 border-[#d3146d] bg-[#f8dbe9] px-4 py-3 text-sm text-black/75">{message}</p>}
             <button type="submit" disabled={pending} className="mt-10 w-full bg-[#d3146d] py-4 text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50">
-              {pending ? "Placing order..." : "Place order"}
+              {pending ? "Opening secure payment..." : "Continue to secure payment"}
             </button>
           </form>
         </section>

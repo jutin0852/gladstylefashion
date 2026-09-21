@@ -8,8 +8,10 @@ import {
   jsonb,
   serial,
   varchar,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 
 // User table
@@ -155,7 +157,9 @@ export const orders = pgTable("orders", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("orders_payment_intent_id_unique").on(table.paymentIntentId).where(sql`${table.paymentIntentId} is not null`),
+]);
 
 // Customer information belongs to the customer and is kept separate from the
 // authentication record so it can grow without changing Better Auth's tables.

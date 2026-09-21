@@ -32,11 +32,14 @@ export async function changeOrderStatus(orderId: string, status: string, shipmen
     await transactionDb.transaction(async (tx) => {
       const order = await tx.query.orders.findFirst({ where: eq(orders.id, orderId), with: { items: true } });
       if (!order) throw new Error("Order not found.");
+      if (nextStatus !== "cancelled" && order.paymentStatus !== "paid") {
+        throw new Error("This order cannot be fulfilled until its payment is confirmed.");
+      }
       const currentStatus = order.status as (typeof statuses)[number];
       if (currentStatus === nextStatus) return;
       if (!allowedTransitions[currentStatus]?.includes(nextStatus)) throw new Error(`Cannot change an ${currentStatus} order to ${nextStatus}.`);
       if (nextStatus === "shipped" && (!shipment?.carrier?.trim() || !shipment?.trackingNumber?.trim())) throw new Error("Carrier and tracking number are required before shipping.");
-      if (nextStatus === "cancelled") {
+      if (nextStatus === "cancelled" && order.paymentStatus === "paid") {
         for (const item of order.items) {
           if (item.productId) await tx.update(products).set({ inventoryCount: sql`coalesce(${products.inventoryCount}, 0) + ${item.quantity}`, updatedAt: new Date() }).where(eq(products.id, item.productId));
         }
@@ -50,7 +53,7 @@ export async function changeOrderStatus(orderId: string, status: string, shipmen
         deliveredAt: nextStatus === "delivered" ? now : order.deliveredAt,
         updatedAt: now,
       }).where(eq(orders.id, orderId));
-      await tx.insert(orderFulfillmentEvents).values({ orderId, status: nextStatus, message: nextStatus === "cancelled" ? "Order cancelled and stock returned to inventory." : nextStatus === "shipped" ? `Shipped with ${shipment?.carrier}: ${shipment?.trackingNumber}` : `Order marked ${nextStatus}.` });
+      await tx.insert(orderFulfillmentEvents).values({ orderId, status: nextStatus, message: nextStatus === "cancelled" ? order.paymentStatus === "paid" ? "Order cancelled and stock returned to inventory." : "Unpaid order cancelled." : nextStatus === "shipped" ? `Shipped with ${shipment?.carrier}: ${shipment?.trackingNumber}` : `Order marked ${nextStatus}.` });
     });
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "Unable to update the order." };
