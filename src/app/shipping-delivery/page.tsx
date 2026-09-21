@@ -1,4 +1,7 @@
 import PolicyPage from "../../components/store/policy-page";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Shipping & delivery", description: "Glad Style Fashion delivery coverage, timing, and delivery terms for orders in Nigeria." };
 
 export default function ShippingDeliveryPage() {
   return <PolicyPage eyebrow="Glad Style Fashion policies" title="Shipping & delivery" intro="These are the delivery terms for our ready-to-wear collection. We currently deliver within Nigeria only." sections={[

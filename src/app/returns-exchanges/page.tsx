@@ -1,4 +1,7 @@
 import PolicyPage from "../../components/store/policy-page";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Returns & exchanges", description: "Glad Style Fashion returns and exchanges policy for ready-to-wear purchases." };
 
 export default function ReturnsExchangesPage() {
   return <PolicyPage eyebrow="Glad Style Fashion policies" title="Returns & exchanges" intro="We want you to feel confident in your purchase. Please read these terms before ordering a ready-to-wear item." sections={[

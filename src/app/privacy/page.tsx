@@ -1,4 +1,7 @@
 import PolicyPage from "../../components/store/policy-page";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Privacy policy", description: "How Glad Style Fashion collects and uses customer information." };
 
 export default function PrivacyPage() {
   return <PolicyPage eyebrow="Glad Style Fashion policies" title="Privacy" intro="This policy explains the information Glad Style Fashion collects when you visit our store or place an order, and how we use it." sections={[

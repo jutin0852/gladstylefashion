@@ -1,4 +1,7 @@
 import PolicyPage from "../../components/store/policy-page";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Terms of use & sale", description: "Terms that apply when you shop with Glad Style Fashion." };
 
 export default function TermsPage() {
   return <PolicyPage eyebrow="Glad Style Fashion policies" title="Terms of use & sale" intro="These terms apply when you use the Glad Style Fashion website or place an order with us." sections={[
