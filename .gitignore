@@ -32,6 +32,9 @@ yarn-error.log*
 .pnpm-debug.log*
 dev-start.log
 
+# Local garment references used during product-image generation
+/public/product-references/
+
 # env files (can opt-in for committing if needed)
 .env*
 
