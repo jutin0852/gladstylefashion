@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Minus, Plus, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ArrowRight, MessageCircle, Minus, Plus, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import BrandLogo from "./brand-logo";
 import { primaryProductAlt, primaryProductImage } from "./brand-assets";
@@ -41,6 +41,11 @@ export default function ProductDetail({
   const { cart, cartCount, removeItem } = useCart();
   const { feedback, addWithFeedback, dismissFeedback } = useCartFeedback();
   const stock = product.inventoryCount ?? 0;
+  const isCustomWear = product.category?.slug === "custom-traditional-wear";
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");
+  const whatsappHref = whatsappNumber
+    ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hello Glad Style Fashion, I am interested in the ${product.productName}. I would like to arrange a fitting consultation.`)}`
+    : undefined;
   const isAvailable = stock > 0;
   const availability = !isAvailable ? "Sold out" : stock <= 5 ? "Low stock" : "Available";
   const bagQuantity = cart
@@ -93,13 +98,17 @@ export default function ProductDetail({
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">{product.category?.name || "Glad Style Fashion"}</p>
               <h1 className="mt-3 max-w-md text-4xl font-medium leading-[0.96] tracking-[-0.055em] sm:text-5xl">{product.productName}</h1>
             </div>
-            <span className="shrink-0 pt-7 text-lg font-medium">{formatStorePrice(product.price)}</span>
+            {isCustomWear ? <span className="shrink-0 pt-7 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#d3146d]">Made for you</span> : <span className="shrink-0 pt-7 text-lg font-medium">{formatStorePrice(product.price)}</span>}
           </div>
 
           <p className="mt-6 max-w-xl text-sm leading-7 text-black/70">{product.description || "A ready-to-wear statement piece designed for plans that deserve a little more presence."}</p>
-          <p className={`mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] ${isAvailable ? "text-[#d3146d]" : "text-black/50"}`}>{availability}</p>
+          {isCustomWear ? <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#d3146d]">In-person fitting required</p> : <p className={`mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] ${isAvailable ? "text-[#d3146d]" : "text-black/50"}`}>{availability}</p>}
 
-          <div className="mt-8 border-y border-black py-6">
+          {isCustomWear ? <div className="mt-8 border-y border-black py-6">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">How custom orders work</p>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-black/70">This piece is made after an in-person consultation and fitting. Message us on WhatsApp to discuss your occasion, preferred date, measurements, fabric, and finishing details.</p>
+            {whatsappHref ? <a href={whatsappHref} target="_blank" rel="noreferrer" className="mt-6 flex w-full items-center justify-center gap-3 bg-[#d3146d] py-4 text-xs font-semibold uppercase tracking-[0.17em] text-white transition-colors hover:bg-black"><MessageCircle size={17} strokeWidth={1.5} /> Enquire on WhatsApp</a> : <button disabled className="mt-6 flex w-full items-center justify-center gap-3 bg-black/20 py-4 text-xs font-semibold uppercase tracking-[0.17em] text-white">WhatsApp enquiries coming soon</button>}
+          </div> : <div className="mt-8 border-y border-black py-6">
             {product.sizes && product.sizes.length > 0 && (
               <div>
                 <div className="mb-4 flex items-center justify-between gap-4 text-[11px] font-semibold uppercase tracking-[0.14em]">
@@ -144,12 +153,12 @@ export default function ProductDetail({
                 <button onClick={() => setQuantity(Math.min(stock || 1, quantity + 1))} className="grid size-10 place-items-center transition-colors hover:bg-black hover:text-white" aria-label="Increase quantity"><Plus size={15} strokeWidth={1.5} /></button>
               </div>
             </div>
-          </div>
+          </div>}
 
-          <button disabled={!isAvailable} onClick={addProduct} className="mt-6 hidden w-full items-center justify-center gap-3 bg-[#d3146d] py-4 text-xs font-semibold uppercase tracking-[0.17em] text-white transition-colors hover:bg-black active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-black/20 lg:flex">
+          {!isCustomWear && <button disabled={!isAvailable} onClick={addProduct} className="mt-6 hidden w-full items-center justify-center gap-3 bg-[#d3146d] py-4 text-xs font-semibold uppercase tracking-[0.17em] text-white transition-colors hover:bg-black active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-black/20 lg:flex">
             {feedback?.success ? (editMode ? "Bag updated" : "Added to bag") : isAvailable ? (editMode ? "Update selections" : "Add to bag") : "Sold out"} <ArrowRight size={16} strokeWidth={1.5} />
-          </button>
-          <p role="status" aria-live="polite" className="hidden min-h-5 pt-3 text-sm text-[#d3146d] lg:block">{feedback?.success ? feedback.message : ""}</p>
+          </button>}
+          {!isCustomWear && <p role="status" aria-live="polite" className="hidden min-h-5 pt-3 text-sm text-[#d3146d] lg:block">{feedback?.success ? feedback.message : ""}</p>}
 
           <div className="mt-7 divide-y divide-black/15 border-y border-black">
             {[
@@ -166,7 +175,7 @@ export default function ProductDetail({
         </div>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black bg-white p-3 lg:hidden">
+      {!isCustomWear && <div className="fixed inset-x-0 bottom-0 z-30 border-t border-black bg-white p-3 lg:hidden">
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">{formatStorePrice(product.price)}</p>
@@ -175,6 +184,7 @@ export default function ProductDetail({
           <button disabled={!isAvailable} onClick={addProduct} className="bg-[#d3146d] px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition-colors hover:bg-black active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-black/20">{editMode ? "Update bag" : "Add to bag"}</button>
         </div>
       </div>
+      }
 
       <CartDrawer open={bagOpen} onClose={() => setBagOpen(false)} width="sm" fallbackImage={primaryProductImage} emptyContent={<Link href="/" onClick={() => setBagOpen(false)} className="mt-6 border-b border-[#d3146d] pb-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#d3146d]">Continue shopping</Link>} />
       <CartAddToast feedback={feedback} bagQuantity={bagQuantity} onDismiss={dismissFeedback} onViewBag={() => { dismissFeedback(); setBagOpen(true); }} />

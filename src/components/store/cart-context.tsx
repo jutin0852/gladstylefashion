@@ -13,7 +13,7 @@ export type StoreProduct = {
   featured: boolean | null;
   inventoryCount: number | null;
   images: { id: number; imageUrl: string; altText: string | null }[];
-  category: { name: string } | null;
+  category: { name: string; slug?: string } | null;
   sizes?: string[] | null;
   materials?: string | null;
   careInstructions?: string | null;

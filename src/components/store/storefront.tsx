@@ -189,6 +189,7 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
             {filteredProducts.map((product) => {
               const primaryImage = product.images?.[0];
               const secondaryImage = product.images?.[1];
+              const isCustomWear = product.category?.slug === "custom-traditional-wear";
               return (
                 <article key={product.id} className="group min-w-0">
                   <a href={`/product/${product.slug}`} className="relative block overflow-hidden bg-[#faedf1]">
@@ -200,7 +201,7 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
                       {product.category?.name && <p className="mb-1 text-[9px] font-medium uppercase tracking-[0.1em] text-black/45">{product.category.name}</p>}
                       <h2 className="text-sm font-medium leading-5 sm:text-base"><a href={`/product/${product.slug}`} className="transition-colors hover:text-[#c71964]">{product.productName}</a></h2>
                     </div>
-                    <p className="shrink-0 pt-0.5 text-xs font-medium sm:text-sm">{formatStorePrice(product.price)}</p>
+                    <p className="shrink-0 pt-0.5 text-right text-[10px] font-semibold uppercase tracking-[0.1em] text-[#c71964] sm:text-xs">{isCustomWear ? "Fitting required" : formatStorePrice(product.price)}</p>
                   </div>
                 </article>
               );

@@ -5,11 +5,11 @@ import {
   productImages,
   products,
 } from "../../schema";
-import { and, asc, desc, eq, gt } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 
 export const getAllProducts = async () => {
   return db.query.products.findMany({
-    where: and(eq(products.isActive, true), gt(products.price, "0")),
+    where: eq(products.isActive, true),
     with: {
       images: {
         orderBy: (image) => [asc(image.displayOrder)],
@@ -47,7 +47,6 @@ export const getProductBySlug = async (slug: string) => {
     where: and(
       eq(products.slug, slug),
       eq(products.isActive, true),
-      gt(products.price, "0"),
     ),
     with: {
       images: {

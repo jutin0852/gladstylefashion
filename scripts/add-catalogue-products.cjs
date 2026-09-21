@@ -41,10 +41,10 @@ const catalogue = [
       slug: "bronze-beaded-custom-occasion-gown",
       description:
         "A fitted custom occasion gown in nude mesh with bronze and gold beadwork. The corset-inspired bodice, delicate straps, and hand-finished floral embellishment make it a statement piece for celebrations and formal events.",
-      price: "250000.00",
-      inventory: 5,
+      price: "0.00",
+      inventory: 0,
       sku: "GSF-CUS-001",
-      sizes: ["S", "M", "L", "XL"],
+      sizes: [],
       materials: "Beaded tulle, sheer mesh, and structured lining.",
       care: "Professional dry clean only. Handle beadwork with care and store flat or on a padded hanger.",
       images: [

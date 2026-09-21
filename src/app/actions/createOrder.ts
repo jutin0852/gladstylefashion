@@ -5,7 +5,7 @@ import { z } from "zod";
 import { and, eq, inArray } from "drizzle-orm";
 import { auth } from "../../lib/auth";
 import { transactionDb } from "../../lib/transaction-db";
-import { orderItems, orders, products, productImages } from "../../lib/schema";
+import { categories, orderItems, orders, products, productImages } from "../../lib/schema";
 import { initializePaystackPayment } from "@/lib/paystack";
 
 const checkoutSchema = z.object({
@@ -92,6 +92,12 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
 
       if (catalogProducts.length !== productIds.length) {
         throw new Error("One or more products are no longer available.");
+      }
+      const categoryIds = catalogProducts.map((product) => product.categoryId).filter((id): id is string => Boolean(id));
+      const productCategories = categoryIds.length ? await tx.select().from(categories).where(inArray(categories.id, categoryIds)) : [];
+      const categoryById = new Map(productCategories.map((category) => [category.id, category]));
+      if (catalogProducts.some((product) => categoryById.get(product.categoryId || "")?.slug === "custom-traditional-wear")) {
+        throw new Error("Custom pieces require an in-person fitting. Please use the WhatsApp enquiry button on the product page.");
       }
 
       const productsById = new Map(
