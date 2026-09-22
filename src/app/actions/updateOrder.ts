@@ -31,7 +31,7 @@ export async function changeOrderStatus(orderId: string, status: string) {
   const nextStatus = status as (typeof statuses)[number];
   let processingNotification: { customerEmail: string; customerName: string; orderNumber: string } | null = null;
   try {
-    await transactionDb.transaction(async (tx) => {
+    processingNotification = await transactionDb.transaction(async (tx) => {
       const order = await tx.query.orders.findFirst({ where: eq(orders.id, orderId), with: { items: true } });
       if (!order) throw new Error("Order not found.");
       if (nextStatus !== "cancelled" && order.paymentStatus !== "paid") {
@@ -66,12 +66,14 @@ export async function changeOrderStatus(orderId: string, status: string) {
       });
 
       if (nextStatus === "processing") {
-        processingNotification = {
+        return {
           customerEmail: order.customerEmail,
           customerName: order.customerName,
           orderNumber: order.orderNumber,
         };
       }
+
+      return null;
     });
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "Unable to update the order." };
