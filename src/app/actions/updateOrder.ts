@@ -5,6 +5,7 @@ import { transactionDb } from "../../lib/transaction-db";
 import { orderFulfillmentEvents, orders, products } from "../../lib/schema";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { sendEmail } from "@/lib/email";
 
 const statuses = [
   "pending",
@@ -22,12 +23,13 @@ const allowedTransitions: Record<(typeof statuses)[number], (typeof statuses)[nu
   cancelled: [],
 };
 
-export async function changeOrderStatus(orderId: string, status: string, shipment?: { carrier?: string; trackingNumber?: string }) {
+export async function changeOrderStatus(orderId: string, status: string) {
   await requireAdmin();
   if (!statuses.includes(status as (typeof statuses)[number])) {
     return { success: false, message: "Invalid order status." };
   }
   const nextStatus = status as (typeof statuses)[number];
+  let processingNotification: { customerEmail: string; customerName: string; orderNumber: string } | null = null;
   try {
     await transactionDb.transaction(async (tx) => {
       const order = await tx.query.orders.findFirst({ where: eq(orders.id, orderId), with: { items: true } });
@@ -38,7 +40,6 @@ export async function changeOrderStatus(orderId: string, status: string, shipmen
       const currentStatus = order.status as (typeof statuses)[number];
       if (currentStatus === nextStatus) return;
       if (!allowedTransitions[currentStatus]?.includes(nextStatus)) throw new Error(`Cannot change an ${currentStatus} order to ${nextStatus}.`);
-      if (nextStatus === "shipped" && (!shipment?.carrier?.trim() || !shipment?.trackingNumber?.trim())) throw new Error("Carrier and tracking number are required before shipping.");
       if (nextStatus === "cancelled" && order.paymentStatus === "paid") {
         for (const item of order.items) {
           if (item.productId) await tx.update(products).set({ inventoryCount: sql`coalesce(${products.inventoryCount}, 0) + ${item.quantity}`, updatedAt: new Date() }).where(eq(products.id, item.productId));
@@ -47,13 +48,30 @@ export async function changeOrderStatus(orderId: string, status: string, shipmen
       const now = new Date();
       await tx.update(orders).set({
         status: nextStatus,
-        carrier: shipment?.carrier?.trim() || order.carrier,
-        trackingNumber: shipment?.trackingNumber?.trim() || order.trackingNumber,
         shippedAt: nextStatus === "shipped" ? now : order.shippedAt,
         deliveredAt: nextStatus === "delivered" ? now : order.deliveredAt,
         updatedAt: now,
       }).where(eq(orders.id, orderId));
-      await tx.insert(orderFulfillmentEvents).values({ orderId, status: nextStatus, message: nextStatus === "cancelled" ? order.paymentStatus === "paid" ? "Order cancelled and stock returned to inventory." : "Unpaid order cancelled." : nextStatus === "shipped" ? `Shipped with ${shipment?.carrier}: ${shipment?.trackingNumber}` : `Order marked ${nextStatus}.` });
+      await tx.insert(orderFulfillmentEvents).values({
+        orderId,
+        status: nextStatus,
+        message:
+          nextStatus === "cancelled"
+            ? order.paymentStatus === "paid"
+              ? "Order cancelled and stock returned to inventory."
+              : "Unpaid order cancelled."
+            : nextStatus === "shipped"
+              ? "Order marked as shipped."
+              : `Order marked ${nextStatus}.`,
+      });
+
+      if (nextStatus === "processing") {
+        processingNotification = {
+          customerEmail: order.customerEmail,
+          customerName: order.customerName,
+          orderNumber: order.orderNumber,
+        };
+      }
     });
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "Unable to update the order." };
@@ -61,7 +79,25 @@ export async function changeOrderStatus(orderId: string, status: string, shipmen
   revalidatePath("/admin");
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);
-  return { success: true };
+
+  if (processingNotification) {
+    try {
+      await sendEmail({
+        to: processingNotification.customerEmail,
+        subject: `Your Glad Style Fashion order ${processingNotification.orderNumber} is being prepared`,
+        text: `Hello ${processingNotification.customerName}, your order ${processingNotification.orderNumber} is now being processed. We are preparing it and will update you when it has been sent.`,
+        html: `<p>Hello ${escapeHtml(processingNotification.customerName)},</p><p>Your order <strong>${escapeHtml(processingNotification.orderNumber)}</strong> is now being processed. We are preparing it and will update you when it has been sent.</p>`,
+      });
+    } catch {
+      return { success: true, message: "Order updated, but the processing email could not be sent." };
+    }
+  }
+
+  return { success: true, message: processingNotification ? "Order updated and processing email sent." : "Order updated." };
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character] || character);
 }
 
 export async function clearAbandonedCheckout(orderId: string) {
