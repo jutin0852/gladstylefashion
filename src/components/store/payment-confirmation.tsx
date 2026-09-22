@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, Clock3, TriangleAlert } from "lucide-react";
 import BrandLogo from "./brand-logo";
@@ -9,8 +9,12 @@ import { useCart } from "./cart-context";
 export default function PaymentConfirmation({ result }: { result: { state: "paid" | "pending" | "failed" | "review"; orderNumber?: string; message?: string } }) {
   const { clearCart } = useCart();
   const paid = result.state === "paid" || result.state === "review";
+  const hasClearedCart = useRef(false);
   useEffect(() => {
-    if (paid) clearCart();
+    if (paid && !hasClearedCart.current) {
+      hasClearedCart.current = true;
+      clearCart();
+    }
   }, [clearCart, paid]);
 
   const isPaid = result.state === "paid";
