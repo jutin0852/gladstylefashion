@@ -118,7 +118,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         addToCart,
         updateQuantity,
         removeItem,
-        clearCart: () => saveCart([]),
+        clearCart: () => {
+          window.localStorage.removeItem(storageKey);
+          saveCart([]);
+        },
       }}
     >
       {children}
