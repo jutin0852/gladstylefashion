@@ -38,7 +38,7 @@ export async function changeOrderStatus(orderId: string, status: string) {
         throw new Error("This order cannot be fulfilled until its payment is confirmed.");
       }
       const currentStatus = order.status as (typeof statuses)[number];
-      if (currentStatus === nextStatus) return;
+      if (currentStatus === nextStatus) return null;
       if (!allowedTransitions[currentStatus]?.includes(nextStatus)) throw new Error(`Cannot change an ${currentStatus} order to ${nextStatus}.`);
       if (nextStatus === "cancelled" && order.paymentStatus === "paid") {
         for (const item of order.items) {
