@@ -186,7 +186,10 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
         email: parsed.data.customerEmail,
         amount: Math.round(Number(result.totalAmount) * 100),
         reference: result.paymentIntentId!,
-        callbackUrl: `${createSiteUrl(requestHeaders)}/checkout/verify?reference=${encodeURIComponent(result.paymentIntentId!)}`,
+        // Paystack appends the transaction reference to this URL after payment.
+        // Supplying our own query parameter here can create a malformed duplicate
+        // reference for transfer redirects.
+        callbackUrl: `${createSiteUrl(requestHeaders)}/checkout/verify`,
         orderId: result.id,
         orderNumber: result.orderNumber,
       });
