@@ -164,7 +164,7 @@ export default function ProductDetail({
             {[
               ["Fabric and feel", product.materials || "Designed for movement and made for repeat wear."],
               ["Care instructions", product.careInstructions || "Follow the care label to preserve the fabric and finish."],
-              ["Delivery and returns", "Nigeria delivery takes approximately 5–7 working days after order confirmation. Delivery is paid by the customer. Read our shipping and returns policies before ordering."],
+              ["Delivery and returns", "Delivery takes approximately 5–7 working days after order confirmation. Delivery is paid by the customer. Read our shipping and returns policies before ordering."],
             ].map(([title, copy]) => (
               <details key={title} className="py-4">
                 <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-[0.15em]">{title}</summary>

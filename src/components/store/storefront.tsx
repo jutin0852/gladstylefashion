@@ -223,7 +223,7 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
         <div className="mx-auto grid max-w-[1500px] gap-10 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-end lg:px-12">
           <div className="max-w-sm">
             <BrandLogo className="h-auto w-40" />
-            <p className="mt-4 text-xs leading-5 text-black/55">Women&apos;s ready-to-wear and custom pieces from Nigeria.</p>
+            <p className="mt-4 text-xs leading-5 text-black/55">Women&apos;s ready-to-wear and custom pieces.</p>
             <div className="mt-6 flex items-center gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-black/45">Follow us</p>
               <a href="https://www.instagram.com/gladstylefashion/" target="_blank" rel="noreferrer" className="grid size-9 place-items-center rounded-full border border-black/15 bg-white transition-transform hover:-translate-y-0.5" aria-label="Follow Glad Style Fashion on Instagram">

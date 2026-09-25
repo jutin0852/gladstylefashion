@@ -83,6 +83,8 @@ export async function verifyAndFinalizePaystackPayment(reference: string): Promi
             name: item.productName,
             quantity: item.quantity,
             size: item.size,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
           })),
         },
       } as const;
@@ -90,17 +92,17 @@ export async function verifyAndFinalizePaystackPayment(reference: string): Promi
     if ("confirmation" in result && result.confirmation) {
       const confirmation = result.confirmation;
       const itemsText = confirmation.items
-        .map((item) => `- ${item.name} × ${item.quantity}${item.size ? ` (size ${item.size})` : ""}`)
+        .map((item) => `- ${item.name} × ${item.quantity}${item.size ? ` (size ${item.size})` : ""} — ₦${Number(item.totalPrice).toLocaleString("en-NG")}`)
         .join("\n");
       const itemsHtml = result.confirmation.items
-        .map((item) => `<li>${escapeHtml(item.name)} × ${item.quantity}${item.size ? ` (size ${escapeHtml(item.size)})` : ""}</li>`)
+        .map((item) => `<tr><td style="padding:12px 0;border-bottom:1px solid #eadfe3"><strong>${escapeHtml(item.name)}</strong>${item.size ? `<br><span style="color:#666;font-size:12px">Size ${escapeHtml(item.size)}</span>` : ""}</td><td style="padding:12px 0;border-bottom:1px solid #eadfe3;text-align:center">${item.quantity}</td><td style="padding:12px 0;border-bottom:1px solid #eadfe3;text-align:right">₦${Number(item.totalPrice).toLocaleString("en-NG")}</td></tr>`)
         .join("");
       try {
         await sendEmail({
           to: confirmation.customerEmail,
           subject: `Order ${result.orderNumber} confirmed — Glad Style Fashion`,
           text: `Hello ${confirmation.customerName},\n\nThank you for your order ${result.orderNumber}. Your payment was confirmed.\n\nItems:\n${itemsText}\n\nTotal: ₦${Number(confirmation.totalAmount).toLocaleString("en-NG")}\n\nWe will email you again when your order is being prepared.`,
-          html: brandedEmail({ title: "Your order is confirmed.", eyebrow: `Order ${escapeHtml(result.orderNumber)}`, intro: `Thank you, ${escapeEmailHtml(confirmation.customerName)}. Your payment was confirmed and we are getting your order ready.`, body: `<strong>Items</strong><ul style="padding-left:20px">${itemsHtml}</ul><p><strong>Total:</strong> ₦${Number(confirmation.totalAmount).toLocaleString("en-NG")}</p>`, ctaLabel: "Visit the store", ctaUrl: process.env.NEXT_PUBLIC_APP_URL || "https://gladstylefashion.com", expiry: "We will email you again when your order is being prepared." }),
+          html: brandedEmail({ title: "Your order is confirmed.", eyebrow: `Order ${escapeHtml(result.orderNumber)}`, intro: `Thank you, ${escapeEmailHtml(confirmation.customerName)}. Your payment was confirmed and we are getting your order ready.`, body: `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-collapse:collapse;font-size:14px"><thead><tr><th align="left" style="padding:10px 0;border-bottom:1px solid #171717;font-size:11px;text-transform:uppercase;letter-spacing:1px">Item</th><th align="center" style="padding:10px 0;border-bottom:1px solid #171717;font-size:11px;text-transform:uppercase;letter-spacing:1px">Qty</th><th align="right" style="padding:10px 0;border-bottom:1px solid #171717;font-size:11px;text-transform:uppercase;letter-spacing:1px">Price</th></tr></thead><tbody>${itemsHtml}</tbody><tfoot><tr><td colspan="2" style="padding:16px 0 0;font-weight:bold">Total paid</td><td align="right" style="padding:16px 0 0;font-weight:bold">₦${Number(confirmation.totalAmount).toLocaleString("en-NG")}</td></tr></tfoot></table>`, ctaLabel: "Visit the store", ctaUrl: process.env.NEXT_PUBLIC_APP_URL || "https://gladstylefashion.com", expiry: "We will email you again when your order is being prepared." }),
         });
       } catch (error) {
         console.error("Order confirmation email failed", error);
