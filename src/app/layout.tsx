@@ -16,11 +16,11 @@ export const metadata: Metadata = {
   applicationName: "Glad Style Fashion",
   icons: {
     icon: [
-      { url: "/brand/favicon-32.png?v=5", type: "image/png", sizes: "32x32" },
-      { url: "/brand/favicon-192.png?v=5", type: "image/png", sizes: "192x192" },
+      { url: "/brand/favicon-32-circle.png?v=7", type: "image/png", sizes: "32x32" },
+      { url: "/brand/favicon-192-circle.png?v=7", type: "image/png", sizes: "192x192" },
     ],
-    shortcut: [{ url: "/brand/favicon-32.png?v=5", type: "image/png" }],
-    apple: [{ url: "/brand/favicon-192.png?v=5", type: "image/png", sizes: "192x192" }],
+    shortcut: [{ url: "/brand/favicon-32-circle.png?v=7", type: "image/png" }],
+    apple: [{ url: "/brand/favicon-192-circle.png?v=7", type: "image/png", sizes: "192x192" }],
   },
   keywords: ["Glad Style Fashion", "ready-to-wear fashion", "boubou", "custom dresses", "occasion wear"],
   openGraph: {
