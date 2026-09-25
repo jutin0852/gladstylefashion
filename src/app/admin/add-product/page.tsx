@@ -16,6 +16,7 @@ import {
 } from "../../../components/ui/field";
 import { Button } from "../../../components/ui/button";
 import { handlecloudinaryUpload } from "../../../lib/cloudinary";
+import { compressProductImages } from "../../../lib/product-image-compression";
 import { ImageFilesSchema, ProductSchema } from "../../../types/admin/admin";
 import { toast } from "sonner";
 import { Spinner } from "../../../components/ui/spinner";
@@ -87,7 +88,8 @@ export default function AddProduct() {
       return;
     }
 
-    const productImages = await handlecloudinaryUpload(image);
+    const filesToUpload = Array.isArray(image) ? image : [image];
+    const productImages = await handlecloudinaryUpload(await compressProductImages(filesToUpload));
     productImages.map((image) => formData.append("images", image));
     const res = await createProductAction(formData);
 

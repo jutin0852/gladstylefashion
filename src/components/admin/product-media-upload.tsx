@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { handlecloudinaryUpload } from "../../lib/cloudinary";
+import { compressProductImages } from "../../lib/product-image-compression";
 import { addProductImages } from "../../app/actions/manageProducts";
 
 export function ProductMediaUpload({
@@ -39,7 +40,8 @@ export function ProductMediaUpload({
     }
 
     startTransition(() => {
-      void handlecloudinaryUpload(files)
+      void compressProductImages(files)
+        .then(handlecloudinaryUpload)
         .then((urls) =>
           addProductImages(productId, Array.isArray(urls) ? urls : [urls]),
         )
@@ -66,7 +68,7 @@ export function ProductMediaUpload({
         className="block w-full text-sm file:mr-3 file:border-0 file:bg-[#f9e4ee] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-black"
       />
       <p className="mt-3 text-xs leading-5 text-muted-foreground">
-        Add up to {5 - currentImageCount} more image{5 - currentImageCount === 1 ? "" : "s"}. Use clear front, back, and detail views. Images must be 5MB or smaller.
+        Add up to {5 - currentImageCount} more image{5 - currentImageCount === 1 ? "" : "s"}. Images are automatically resized and compressed before storage.
       </p>
       <button
         type="button"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { Menu, Search, ShoppingBag, SlidersHorizontal, UserRound, X } from "lucide-react";
 import BrandLogo from "./brand-logo";
 import { primaryProductAlt, primaryProductImage } from "./brand-assets";
@@ -191,9 +192,9 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
               const secondaryImage = product.images?.[1];
               return (
                 <article key={product.id} className="group min-w-0">
-                  <a href={`/product/${product.slug}`} className="relative block overflow-hidden bg-[#faedf1]">
-                    <img src={primaryImage?.imageUrl || primaryProductImage} alt={primaryImage?.altText || product.productName || primaryProductAlt} className={`aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.015] ${secondaryImage ? "group-hover:opacity-0" : ""}`} />
-                    {secondaryImage && <img src={secondaryImage.imageUrl} alt="" aria-hidden="true" className="absolute inset-0 aspect-[3/4] w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100" />}
+                  <a href={`/product/${product.slug}`} className="relative block aspect-[3/4] overflow-hidden bg-[#faedf1]">
+                    <Image fill loading="eager" sizes="(max-width: 1023px) 50vw, 25vw" quality={75} src={primaryImage?.imageUrl || primaryProductImage} alt={primaryImage?.altText || product.productName || primaryProductAlt} className={`object-cover transition duration-500 group-hover:scale-[1.015] ${secondaryImage ? "group-hover:opacity-0" : ""}`} />
+                    {secondaryImage && <Image fill loading="eager" sizes="(max-width: 1023px) 50vw, 25vw" quality={75} src={secondaryImage.imageUrl} alt="" aria-hidden="true" className="object-cover opacity-0 transition duration-500 group-hover:opacity-100" />}
                   </a>
                   <div className="flex flex-col gap-1 pt-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3 sm:pt-4">
                     <div className="min-w-0 max-w-full">

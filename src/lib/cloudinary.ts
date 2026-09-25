@@ -7,7 +7,7 @@ export const uploadToCloudinary = async (
 
   const sigRes = await fetch("/api/cloudinary-signature", { method: "POST" });
   const sigData = await sigRes.json();
-  const { timestamp, signature, cloudName, apiKey } = sigData;
+  const { timestamp, signature, cloudName, apiKey, transformation } = sigData;
 
   // upload each file
   const urls = await Promise.all(
@@ -18,6 +18,7 @@ export const uploadToCloudinary = async (
       formData.append("timestamp", timestamp);
       formData.append("signature", signature);
       formData.append("folder", "uploads");
+      formData.append("transformation", transformation);
 
       const res = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,

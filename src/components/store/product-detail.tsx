@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, MessageCircle, Minus, Plus, ShoppingBag } from "lucide-react";
 import Link from "next/link";
@@ -84,8 +85,8 @@ export default function ProductDetail({
         <div className="bg-white">
           <div className="grid gap-1 sm:grid-cols-2 sm:gap-2">
             {gallery.map((image, index) => (
-              <figure key={image.id} className="relative bg-white">
-                <img src={image.imageUrl} alt={image.altText || product.productName} className="aspect-[3/4] w-full object-cover" />
+              <figure key={image.id} className="relative aspect-[3/4] bg-white">
+                <Image fill loading="eager" sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 60vw" quality={80} src={image.imageUrl} alt={image.altText || product.productName} className="object-cover" />
                 <figcaption className="sr-only">{index === 0 ? "Front view" : index === 1 ? "Back view" : "Fabric and construction detail"}</figcaption>
               </figure>
             ))}

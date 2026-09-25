@@ -23,10 +23,12 @@ export async function POST() {
   }
 
   const timestamp = Math.round(Date.now() / 1000);
+  const transformation = "c_limit,w_1600,q_82";
   const signature = cloudinary.utils.api_sign_request(
     {
       timestamp,
       folder: "uploads",
+      transformation,
     },
     apiSecret,
   );
@@ -36,5 +38,6 @@ export async function POST() {
     signature,
     cloudName,
     apiKey,
+    transformation,
   });
 }
