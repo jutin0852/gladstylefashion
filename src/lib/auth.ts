@@ -18,6 +18,21 @@ const trustedOrigins = [
 export const auth = betterAuth({
   trustedOrigins,
   database: drizzleAdapter(authDb, { provider: "pg" }),
+  rateLimit: {
+    enabled: true,
+    // Keep a broad safety net for any auth endpoint not listed below.
+    window: 10,
+    max: 100,
+    // These limits apply on the server, so they cannot be bypassed by
+    // disabling the browser countdown or calling the endpoint directly.
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 60 * 60, max: 5 },
+      "/send-verification-email": { window: 60 * 60, max: 3 },
+      "/request-password-reset": { window: 60 * 60, max: 5 },
+      "/reset-password": { window: 60, max: 10 },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
