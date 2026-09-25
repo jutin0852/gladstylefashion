@@ -12,15 +12,14 @@ import { formatStorePrice } from "./currency";
 const fields = [
   ["customerName", "Full name", "text"],
   ["customerEmail", "Email address", "email"],
-  ["customerPhone", "Phone (optional)", "tel"],
-  ["street", "Street address", "text"],
+  ["customerPhone", "Phone number", "tel"],
+  ["street", "Address", "text"],
   ["city", "City", "text"],
   ["state", "State / region", "text"],
-  ["postalCode", "Postal code", "text"],
   ["country", "Country", "select"],
 ] as const;
 
-export default function CheckoutForm({ initialCustomer }: { initialCustomer?: { name?: string | null; email?: string | null; phone?: string | null; street?: string | null; city?: string | null; state?: string | null; postalCode?: string | null } }) {
+export default function CheckoutForm({ initialCustomer }: { initialCustomer?: { name?: string | null; email?: string | null; phone?: string | null; street?: string | null; city?: string | null; state?: string | null } }) {
   const { cart, cartTotal, updateQuantity } = useCart();
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
@@ -85,7 +84,7 @@ export default function CheckoutForm({ initialCustomer }: { initialCustomer?: { 
                     <input
                       name={name}
                       type={type}
-                      required={!name.includes("Phone")}
+                      required
                       defaultValue={name === "customerName" ? initialCustomer?.name || "" : name === "customerEmail" ? initialCustomer?.email || "" : name === "customerPhone" ? initialCustomer?.phone || "" : initialCustomer?.[name as keyof typeof initialCustomer] || ""}
                       className="w-full border border-black bg-white px-4 py-3 text-sm outline-none transition-colors placeholder:text-black/35 focus:border-[#d3146d] focus:ring-1 focus:ring-[#d3146d]"
                     />

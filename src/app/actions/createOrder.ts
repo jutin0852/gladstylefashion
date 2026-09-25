@@ -11,11 +11,10 @@ import { initializePaystackPayment } from "@/lib/paystack";
 const checkoutSchema = z.object({
   customerName: z.string().trim().min(2).max(100),
   customerEmail: z.string().trim().email().max(255),
-  customerPhone: z.string().trim().max(30).optional(),
+  customerPhone: z.string().trim().min(5).max(30),
   street: z.string().trim().min(3).max(200),
   city: z.string().trim().min(2).max(100),
   state: z.string().trim().min(2).max(100),
-  postalCode: z.string().trim().min(2).max(20),
   country: z.literal("Nigeria"),
   items: z
     .array(
@@ -55,7 +54,6 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
     street: formData.get("street"),
     city: formData.get("city"),
     state: formData.get("state"),
-    postalCode: formData.get("postalCode"),
     country: formData.get("country"),
     items: (() => {
       try {
@@ -157,7 +155,7 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
             street: parsed.data.street,
             city: parsed.data.city,
             state: parsed.data.state,
-            postalCode: parsed.data.postalCode,
+            postalCode: "",
             country: parsed.data.country,
           },
           paymentIntentId: paymentReference,

@@ -5,7 +5,7 @@ import { transactionDb } from "../../lib/transaction-db";
 import { orderFulfillmentEvents, orders, products } from "../../lib/schema";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { sendEmail } from "@/lib/email";
+import { brandedEmail, escapeEmailHtml, sendEmail } from "@/lib/email";
 
 const statuses = [
   "pending",
@@ -88,7 +88,7 @@ export async function changeOrderStatus(orderId: string, status: string) {
         to: processingNotification.customerEmail,
         subject: `Your Glad Style Fashion order ${processingNotification.orderNumber} is being prepared`,
         text: `Hello ${processingNotification.customerName}, your order ${processingNotification.orderNumber} is now being processed. We are preparing it and will update you when it has been sent.`,
-        html: `<p>Hello ${escapeHtml(processingNotification.customerName)},</p><p>Your order <strong>${escapeHtml(processingNotification.orderNumber)}</strong> is now being processed. We are preparing it and will update you when it has been sent.</p>`,
+        html: brandedEmail({ title: "We are preparing your order.", eyebrow: `Order ${escapeHtml(processingNotification.orderNumber)}`, intro: `Hello ${escapeEmailHtml(processingNotification.customerName)}. Your order is now being processed.`, body: "We are preparing your pieces carefully and will update you when your order has been sent.", ctaLabel: "Visit the store", ctaUrl: process.env.NEXT_PUBLIC_APP_URL || "https://gladstylefashion.com" }),
       });
     } catch {
       return { success: true, message: "Order updated, but the processing email could not be sent." };
