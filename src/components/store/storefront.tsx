@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Instagram, Menu, Search, ShoppingBag, SlidersHorizontal, UserRound, X } from "lucide-react";
+import { Menu, Search, ShoppingBag, SlidersHorizontal, UserRound, X } from "lucide-react";
 import BrandLogo from "./brand-logo";
 import { primaryProductAlt, primaryProductImage } from "./brand-assets";
 import { formatStorePrice } from "./currency";
@@ -189,19 +189,18 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
             {filteredProducts.map((product) => {
               const primaryImage = product.images?.[0];
               const secondaryImage = product.images?.[1];
-              const isCustomWear = product.category?.slug === "custom-traditional-wear";
               return (
                 <article key={product.id} className="group min-w-0">
                   <a href={`/product/${product.slug}`} className="relative block overflow-hidden bg-[#faedf1]">
                     <img src={primaryImage?.imageUrl || primaryProductImage} alt={primaryImage?.altText || product.productName || primaryProductAlt} className={`aspect-[3/4] w-full object-cover transition duration-500 group-hover:scale-[1.015] ${secondaryImage ? "group-hover:opacity-0" : ""}`} />
                     {secondaryImage && <img src={secondaryImage.imageUrl} alt="" aria-hidden="true" className="absolute inset-0 aspect-[3/4] w-full object-cover opacity-0 transition duration-500 group-hover:opacity-100" />}
                   </a>
-                  <div className="flex items-start justify-between gap-3 pt-3 sm:pt-4">
-                    <div className="min-w-0">
+                  <div className="flex flex-col gap-1 pt-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3 sm:pt-4">
+                    <div className="min-w-0 max-w-full">
                       {product.category?.name && <p className="mb-1 text-[9px] font-medium uppercase tracking-[0.1em] text-black/45">{product.category.name}</p>}
-                      <h2 className="text-sm font-medium leading-5 sm:text-base"><a href={`/product/${product.slug}`} className="transition-colors hover:text-[#c71964]">{product.productName}</a></h2>
+                      <h2 className="break-words text-sm font-medium leading-5 sm:text-base"><a href={`/product/${product.slug}`} className="transition-colors hover:text-[#c71964]">{product.productName}</a></h2>
                     </div>
-                    <p className="shrink-0 pt-0.5 text-right text-[10px] font-semibold uppercase tracking-[0.1em] text-[#c71964] sm:text-xs">{isCustomWear ? "Fitting required" : formatStorePrice(product.price)}</p>
+                    <p className="shrink-0 pt-0.5 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-[#c71964] sm:text-right sm:text-xs">{formatStorePrice(product.price)}</p>
                   </div>
                 </article>
               );
@@ -221,19 +220,30 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
       </section>
 
       <footer className="bg-[#fffdfd]">
-        <div className="mx-auto grid max-w-[1500px] gap-8 px-5 py-10 sm:px-8 md:grid-cols-[1fr_auto] md:items-end lg:px-12">
-          <div>
+        <div className="mx-auto grid max-w-[1500px] gap-10 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-end lg:px-12">
+          <div className="max-w-sm">
             <BrandLogo className="h-auto w-40" />
             <p className="mt-4 text-xs leading-5 text-black/55">Women&apos;s ready-to-wear and custom pieces from Nigeria.</p>
+            <div className="mt-6 flex items-center gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-black/45">Follow us</p>
+              <a href="https://www.instagram.com/gladstylefashion/" target="_blank" rel="noreferrer" className="grid size-9 place-items-center rounded-full border border-black/15 bg-white transition-transform hover:-translate-y-0.5" aria-label="Follow Glad Style Fashion on Instagram">
+                <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+                  <defs><linearGradient id="instagram-gradient" x1="0" x2="1" y1="1" y2="0"><stop offset="0" stopColor="#f58529" /><stop offset="0.45" stopColor="#dd2a7b" /><stop offset="1" stopColor="#8134af" /></linearGradient></defs>
+                  <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="url(#instagram-gradient)" strokeWidth="2" />
+                  <circle cx="12" cy="12" r="4" fill="none" stroke="url(#instagram-gradient)" strokeWidth="2" />
+                  <circle cx="17.5" cy="6.5" r="1.2" fill="#dd2a7b" />
+                </svg>
+              </a>
+              <a href="https://www.facebook.com/gladstylefashion" target="_blank" rel="noreferrer" className="grid size-9 place-items-center rounded-full border border-black/15 bg-white transition-transform hover:-translate-y-0.5" aria-label="Follow Glad Style Fashion on Facebook">
+                <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#1877f2" /><path d="M13.4 19v-6h2l.3-2.3h-2.3V9.2c0-.7.2-1.2 1.2-1.2h1.2V6a15 15 0 0 0-1.7-.1c-1.7 0-2.9 1-2.9 3v1.8H9.3V13h1.9v6h2.2Z" fill="white" /></svg>
+              </a>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-x-5 gap-y-3 text-[10px] font-medium uppercase tracking-[0.12em] text-black/60 md:justify-end">
+          <div className="flex max-w-xl flex-wrap items-center gap-x-5 gap-y-3 text-[10px] font-medium uppercase tracking-[0.12em] text-black/60 md:justify-end">
             <a href="/shipping-delivery" className="hover:text-[#c71964]">Shipping and delivery</a>
             <a href="/returns-exchanges" className="hover:text-[#c71964]">Returns and exchanges</a>
             <a href="/privacy" className="hover:text-[#c71964]">Privacy</a>
             <a href="/terms" className="hover:text-[#c71964]">Terms</a>
-            <a href="https://www.instagram.com/gladstylefashion?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw==" target="_blank" rel="noreferrer" className="grid size-7 place-items-center hover:text-[#c71964]" aria-label="Follow Glad Style Fashion on Instagram">
-              <Instagram size={17} strokeWidth={1.5} />
-            </a>
           </div>
         </div>
       </footer>
