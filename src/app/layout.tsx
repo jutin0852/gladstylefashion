@@ -15,9 +15,9 @@ export const metadata: Metadata = {
   description: "Shop expressive ready-to-wear dresses, boubous, and custom occasion pieces from Glad Style Fashion.",
   applicationName: "Glad Style Fashion",
   icons: {
-    icon: [{ url: "/icon.svg?v=2", type: "image/svg+xml" }],
-    shortcut: [{ url: "/icon.svg?v=2", type: "image/svg+xml" }],
-    apple: [{ url: "/icon.svg?v=2", type: "image/svg+xml" }],
+    icon: [{ url: "/favicon.svg?v=3", type: "image/svg+xml" }],
+    shortcut: [{ url: "/favicon.svg?v=3", type: "image/svg+xml" }],
+    apple: [{ url: "/favicon.svg?v=3", type: "image/svg+xml" }],
   },
   keywords: ["Glad Style Fashion", "ready-to-wear fashion", "boubou", "custom dresses", "occasion wear"],
   openGraph: {
