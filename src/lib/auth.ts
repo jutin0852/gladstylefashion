@@ -7,7 +7,16 @@ const emailDeliveryConfigured = Boolean(
   process.env.RESEND_API_KEY && process.env.EMAIL_FROM && process.env.BETTER_AUTH_URL,
 );
 
+const trustedOrigins = [
+  process.env.BETTER_AUTH_URL,
+  process.env.NEXT_PUBLIC_APP_URL,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+  "https://gladstylefashion.com",
+  "https://www.gladstylefashion.com",
+].filter((origin): origin is string => Boolean(origin)).map((origin) => origin.replace(/\/$/, ""));
+
 export const auth = betterAuth({
+  trustedOrigins,
   database: drizzleAdapter(authDb, { provider: "pg" }),
   emailAndPassword: {
     enabled: true,
