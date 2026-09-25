@@ -8,6 +8,7 @@ import { createProduct } from "../../lib/admin/queries/product";
 import { db } from "../../lib/db";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "../../lib/admin-auth";
+import { revalidatePath } from "next/cache";
 
 // import { revalidatePath } from "next/cache";
 
@@ -80,7 +81,8 @@ export async function createProductAction(formData: FormData) {
       validatedProductFields.data.images!,
     );
 
-    //     revalidatePath("/admin/products");
+    revalidatePath("/");
+    revalidatePath("/sitemap.xml");
 
     return {
       success: true,

@@ -4,6 +4,7 @@ import { requireAdmin } from "../../lib/admin-auth";
 import { db } from "../../lib/db";
 import { productImages, products } from "../../lib/schema";
 import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 
 export async function updateProductStatus(
   productId: string,
@@ -15,12 +16,16 @@ export async function updateProductStatus(
     .update(products)
     .set({ [field]: value, updatedAt: new Date() })
     .where(eq(products.id, productId));
+  revalidatePath("/");
+  revalidatePath("/sitemap.xml");
   return { success: true };
 }
 
 export async function deleteProduct(productId: string) {
   await requireAdmin();
   await db.delete(products).where(eq(products.id, productId));
+  revalidatePath("/");
+  revalidatePath("/sitemap.xml");
   return { success: true };
 }
 
@@ -98,6 +103,9 @@ export async function updateProduct(
       updatedAt: new Date(),
     })
     .where(eq(products.id, productId));
+  revalidatePath("/");
+  revalidatePath("/sitemap.xml");
+  revalidatePath(`/product/${slug}`);
   return { success: true };
 }
 
