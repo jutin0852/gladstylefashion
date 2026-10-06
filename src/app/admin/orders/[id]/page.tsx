@@ -26,7 +26,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const canClear =
     order.status === "pending" &&
     order.paymentStatus !== "paid" &&
-    (order.paymentStatus === "failed" || !order.createdAt || Date.now() - order.createdAt.getTime() >= 30 * 60_000);
+    (order.reservationStatus === "released" || (order.reservationStatus === "active" && Boolean(order.reservationExpiresAt && order.reservationExpiresAt <= new Date())));
 
   return (
     <section className="@container/main flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">

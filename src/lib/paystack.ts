@@ -1,8 +1,9 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { parsePaystackAmount, toPaystackAmount, type MoneyKobo } from "./money";
 
 const PAYSTACK_API_URL = "https://api.paystack.co";
 
-type PaystackTransaction = {
+export type PaystackTransaction = {
   status: string;
   reference: string;
   amount: number;
@@ -36,7 +37,7 @@ async function paystackRequest<T>(path: string, init?: RequestInit): Promise<T> 
 
 export async function initializePaystackPayment(input: {
   email: string;
-  amount: number;
+  amountKobo: MoneyKobo;
   reference: string;
   callbackUrl: string;
   orderId: string;
@@ -46,7 +47,7 @@ export async function initializePaystackPayment(input: {
     method: "POST",
     body: JSON.stringify({
       email: input.email,
-      amount: input.amount,
+      amount: toPaystackAmount(input.amountKobo),
       currency: "NGN",
       reference: input.reference,
       callback_url: input.callbackUrl,
@@ -56,6 +57,20 @@ export async function initializePaystackPayment(input: {
       },
     }),
   });
+}
+
+export function matchesPaystackPayment(
+  payment: PaystackTransaction,
+  expectedReference: string,
+  expectedAmountKobo: MoneyKobo,
+) {
+  try {
+    return payment.reference === expectedReference
+      && payment.currency === "NGN"
+      && parsePaystackAmount(payment.amount) === expectedAmountKobo;
+  } catch {
+    return false;
+  }
 }
 
 export async function verifyPaystackPayment(reference: string) {

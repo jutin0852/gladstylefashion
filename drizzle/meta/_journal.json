@@ -50,6 +50,20 @@
       "when": 1790000000000,
       "tag": "0006_customer_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791264000000,
+      "tag": "0008_inventory_reservations",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791350400000,
+      "tag": "0009_product_variants",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,7 @@ import {
   updateProductStatus,
 } from "../../app/actions/manageProducts";
 import type { StoreProduct } from "../store/cart-context";
+import { formatStorePrice } from "../store/currency";
 
 export function ProductManagement({
   products,
@@ -105,11 +106,12 @@ export function ProductManagement({
                   <td className="p-3 text-muted-foreground">
                     {product.sku || "-"}
                   </td>
-                  <td className="p-3 font-medium">₦{Number(product.price).toLocaleString("en-NG")}</td>
+                  <td className="p-3 font-medium">{formatStorePrice(product.price)}</td>
                   <td
                     className={`p-3 ${(product.inventoryCount ?? 0) <= 5 ? "font-medium text-destructive" : ""}`}
                   >
-                    {product.inventoryCount ?? 0}
+                    {product.inventoryMigrationStatus === "migrated" ? product.variants.filter((variant) => variant.isActive).reduce((total, variant) => total + variant.inventoryCount, 0) : product.inventoryCount ?? 0}
+                    <div className="text-[10px] uppercase tracking-[.08em] text-muted-foreground">{product.inventoryReconciliationRequired ? "Needs size reconciliation" : product.inventoryMigrationStatus === "migrated" ? "By size" : "Legacy"}</div>
                   </td>
                   <td className="p-3">
                     <Link

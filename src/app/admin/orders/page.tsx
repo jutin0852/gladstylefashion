@@ -2,6 +2,7 @@ import { SectionCards } from "@/components/admin/section-cards";
 import { LiveOrdersTable } from "@/components/admin/live-orders-table";
 import { getAdminAnalytics } from "../../../lib/admin/queries/analytics";
 import { requireAdmin } from "../../../lib/admin-auth";
+import { formatStorePrice } from "@/components/store/currency";
 
 export default async function OrdersPage() {
   await requireAdmin();
@@ -9,7 +10,7 @@ export default async function OrdersPage() {
   const cards = [
     {
       description: "Paid sales",
-      title: `₦${analytics.cards.totalSales.toLocaleString("en-NG")}`,
+      title: formatStorePrice(analytics.cards.totalSales),
       action: "Live",
       footerMain: "Revenue from paid orders",
       footerSub: "Calculated from the orders table",

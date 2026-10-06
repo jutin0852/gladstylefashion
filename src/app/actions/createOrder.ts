@@ -2,16 +2,19 @@
 
 import { headers } from "next/headers";
 import { z } from "zod";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { auth } from "../../lib/auth";
 import { transactionDb } from "../../lib/transaction-db";
-import { categories, orderItems, orders, products, productImages } from "../../lib/schema";
+import { categories, orderItems, orders, products, productImages, productVariants } from "../../lib/schema";
 import { initializePaystackPayment } from "@/lib/paystack";
+import { getReservationExpiry, releaseInventoryReservation } from "@/lib/inventory-reservations";
+import { koboToNairaDecimal, parseNairaToKobo } from "@/lib/money";
 
 const checkoutSchema = z.object({
   customerName: z.string().trim().min(2).max(100),
   customerEmail: z.string().trim().email().max(255),
   customerPhone: z.string().trim().min(5).max(30),
+  idempotencyKey: z.string().uuid(),
   street: z.string().trim().min(3).max(200),
   city: z.string().trim().min(2).max(100),
   state: z.string().trim().min(2).max(100),
@@ -21,6 +24,7 @@ const checkoutSchema = z.object({
       z.object({
         productId: z.string().min(1),
         quantity: z.number().int().min(1).max(99),
+        variantId: z.string().min(1).optional(),
         size: z.string().max(30).optional(),
         customizations: z.object({
           color: z.string().trim().max(80).optional(),
@@ -46,11 +50,16 @@ function createSiteUrl(requestHeaders: Headers) {
   return `${protocol}://${host}`;
 }
 
+function isUniqueViolation(error: unknown) {
+  return Boolean(error && typeof error === "object" && "code" in error && error.code === "23505");
+}
+
 export async function createOrder(formData: FormData): Promise<CheckoutResult> {
   const parsed = checkoutSchema.safeParse({
     customerName: formData.get("customerName"),
     customerEmail: formData.get("customerEmail"),
     customerPhone: formData.get("customerPhone") || undefined,
+    idempotencyKey: formData.get("idempotencyKey"),
     street: formData.get("street"),
     city: formData.get("city"),
     state: formData.get("state"),
@@ -68,19 +77,27 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
     return { success: false, message: "Please complete all checkout fields. We currently deliver within Nigeria only." };
   }
 
-  const quantities = new Map<string, number>();
-  for (const item of parsed.data.items) {
-    quantities.set(
-      item.productId,
-      (quantities.get(item.productId) || 0) + item.quantity,
-    );
-  }
-  const productIds = [...quantities.keys()];
+  const productIds = [...new Set(parsed.data.items.map((item) => item.productId))];
 
   try {
     const requestHeaders = await headers();
     const session = await auth.api.getSession({ headers: requestHeaders });
     const result = await transactionDb.transaction(async (tx) => {
+      const existingOrder = await tx.query.orders.findFirst({
+        where: eq(orders.checkoutIdempotencyKey, parsed.data.idempotencyKey),
+      });
+      if (existingOrder) {
+        const sameCustomer = existingOrder.customerEmail.toLowerCase() === parsed.data.customerEmail.toLowerCase() && (!session?.user.id || !existingOrder.userId || session.user.id === existingOrder.userId);
+        if (!sameCustomer) throw new Error("This checkout key is not valid for the submitted customer.");
+        if (existingOrder.paymentStatus === "pending" && existingOrder.reservationStatus === "active" && existingOrder.paymentAuthorizationUrl) {
+          return { kind: "existing" as const, authorizationUrl: existingOrder.paymentAuthorizationUrl };
+        }
+        if (existingOrder.paymentStatus === "pending" && existingOrder.reservationStatus === "active") {
+          throw new Error("Your payment is still being prepared. Please try again in a moment.");
+        }
+        throw new Error("This checkout is no longer active. Please return to your bag and start checkout again.");
+      }
+
       const catalogProducts = await tx
         .select()
         .from(products)
@@ -101,6 +118,8 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
       const productsById = new Map(
         catalogProducts.map((product) => [product.id, product]),
       );
+      const catalogVariants = await tx.select().from(productVariants).where(inArray(productVariants.productId, productIds));
+      const variantsById = new Map(catalogVariants.map((variant) => [variant.id, variant]));
       const catalogImages = await tx.select().from(productImages).where(inArray(productImages.productId, productIds));
       const firstImageByProduct = new Map<string, string>();
       for (const image of catalogImages.sort((a, b) => a.displayOrder - b.displayOrder)) {
@@ -111,34 +130,52 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
         if (!product) {
           throw new Error("One or more products are no longer available.");
         }
-        if (item.size && product.sizes && !product.sizes.includes(item.size)) {
-          throw new Error(
-            `${product.productName} does not offer size ${item.size}.`,
-          );
+        const variant = item.variantId ? variantsById.get(item.variantId) : undefined;
+        if (product.inventoryMigrationStatus === "migrated") {
+          if (!variant || variant.productId !== product.id || !variant.isActive || variant.size !== (item.size || "ONE_SIZE")) throw new Error(`${product.productName} does not have that available size.`);
+        } else if (item.variantId || (item.size && product.sizes && !product.sizes.includes(item.size))) {
+          throw new Error(`${product.productName} does not offer size ${item.size || "selected"}.`);
         }
         const quantity = item.quantity;
-        const unitPrice = Number(product.price);
+        const unitPriceKobo = parseNairaToKobo(product.price);
+        if (unitPriceKobo <= BigInt(0)) throw new Error(`${product.productName} has an invalid price.`);
         return {
           product,
+          variant,
           quantity,
           size: item.size,
-          unitPrice,
-          totalPrice: unitPrice * quantity,
+          unitPriceKobo,
+          totalPriceKobo: unitPriceKobo * BigInt(quantity),
           customizations: item.customizations,
         };
       });
-      for (const [productId, quantity] of quantities) {
-        const product = productsById.get(productId);
-        if (!product || quantity > (product.inventoryCount || 0)) {
-          throw new Error(
-            `${product?.productName || "A product"} does not have enough stock.`,
-          );
-        }
+      const legacyQuantities = new Map<string, number>();
+      const variantQuantities = new Map<string, number>();
+      for (const item of lineItems) {
+        if (item.variant) variantQuantities.set(item.variant.id, (variantQuantities.get(item.variant.id) || 0) + item.quantity);
+        else legacyQuantities.set(item.product.id, (legacyQuantities.get(item.product.id) || 0) + item.quantity);
       }
-      const totalAmount = lineItems.reduce(
-        (total, item) => total + item.totalPrice,
-        0,
+      for (const [variantId, quantity] of [...variantQuantities.entries()].sort(([left], [right]) => left.localeCompare(right))) {
+        const variant = variantsById.get(variantId);
+        const reserved = await tx.update(productVariants)
+          .set({ inventoryCount: sql`${productVariants.inventoryCount} - ${quantity}`, updatedAt: new Date() })
+          .where(and(eq(productVariants.id, variantId), eq(productVariants.isActive, true), sql`${productVariants.inventoryCount} >= ${quantity}`))
+          .returning({ id: productVariants.id });
+        if (reserved.length !== 1) throw new Error(`${variant?.size || "Selected size"} does not have enough stock.`);
+      }
+      for (const [productId, quantity] of [...legacyQuantities.entries()].sort(([left], [right]) => left.localeCompare(right))) {
+        const product = productsById.get(productId);
+        const reserved = await tx.update(products)
+          .set({ inventoryCount: sql`coalesce(${products.inventoryCount}, 0) - ${quantity}`, updatedAt: new Date() })
+          .where(and(eq(products.id, productId), eq(products.isActive, true), eq(products.inventoryMigrationStatus, "legacy"), sql`coalesce(${products.inventoryCount}, 0) >= ${quantity}`))
+          .returning({ id: products.id });
+        if (reserved.length !== 1) throw new Error(`${product?.productName || "A product"} does not have enough stock.`);
+      }
+      const totalKobo = lineItems.reduce(
+        (total, item) => total + item.totalPriceKobo,
+        BigInt(0),
       );
+      if (totalKobo <= BigInt(0)) throw new Error("The order total must be greater than zero.");
       const orderNumber = `GS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
       const paymentReference = `GS-${crypto.randomUUID().replaceAll("-", "")}`;
 
@@ -150,7 +187,7 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
           customerName: parsed.data.customerName,
           customerEmail: parsed.data.customerEmail,
           customerPhone: parsed.data.customerPhone || null,
-          totalAmount: totalAmount.toFixed(2),
+          totalAmount: koboToNairaDecimal(totalKobo),
           shippingAddress: {
             street: parsed.data.street,
             city: parsed.data.city,
@@ -158,31 +195,37 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
             postalCode: "",
             country: parsed.data.country,
           },
+          checkoutIdempotencyKey: parsed.data.idempotencyKey,
           paymentIntentId: paymentReference,
           paymentStatus: "pending",
+          reservationStatus: "active",
+          reservationExpiresAt: getReservationExpiry(),
         })
         .returning({ id: orders.id, orderNumber: orders.orderNumber, paymentIntentId: orders.paymentIntentId, totalAmount: orders.totalAmount });
 
       await tx.insert(orderItems).values(
-        lineItems.map(({ product, quantity, size, unitPrice, totalPrice, customizations }) => ({
+        lineItems.map(({ product, variant, quantity, size, unitPriceKobo, totalPriceKobo, customizations }) => ({
           orderId: order.id,
           productId: product.id,
+          variantId: variant?.id || null,
+          variantSku: variant?.sku || null,
           productName: product.productName,
           productImage: firstImageByProduct.get(product.id) || null,
           size: size || null,
           customizations: customizations || null,
           quantity,
-          unitPrice: unitPrice.toFixed(2),
-          totalPrice: totalPrice.toFixed(2),
+          unitPrice: koboToNairaDecimal(unitPriceKobo),
+          totalPrice: koboToNairaDecimal(totalPriceKobo),
         })),
       );
 
-      return order;
+      return { kind: "new" as const, ...order, totalKobo };
     });
+    if (result.kind === "existing") return { success: true, authorizationUrl: result.authorizationUrl };
     try {
       const payment = await initializePaystackPayment({
         email: parsed.data.customerEmail,
-        amount: Math.round(Number(result.totalAmount) * 100),
+        amountKobo: result.totalKobo,
         reference: result.paymentIntentId!,
         // Paystack appends the transaction reference to this URL after payment.
         // Supplying our own query parameter here can create a malformed duplicate
@@ -191,12 +234,24 @@ export async function createOrder(formData: FormData): Promise<CheckoutResult> {
         orderId: result.id,
         orderNumber: result.orderNumber,
       });
+      const savedAuthorization = await transactionDb.transaction(async (tx) => tx.update(orders)
+        .set({ paymentAuthorizationUrl: payment.authorization_url, updatedAt: new Date() })
+        .where(and(eq(orders.id, result.id), eq(orders.paymentStatus, "pending"), eq(orders.reservationStatus, "active"), isNull(orders.paymentAuthorizationUrl)))
+        .returning({ id: orders.id }));
+      if (savedAuthorization.length !== 1) throw new Error("This checkout reservation has expired. Please return to your bag and try again.");
       return { success: true, authorizationUrl: payment.authorization_url };
     } catch (error) {
-      await transactionDb.update(orders).set({ paymentStatus: "failed", updatedAt: new Date() }).where(eq(orders.id, result.id));
+      await transactionDb.transaction(async (tx) => releaseInventoryReservation(tx, result.id, "payment_initialization_failed"));
       throw error;
     }
   } catch (error) {
+    if (isUniqueViolation(error)) {
+      const existingOrder = await transactionDb.query.orders.findFirst({ where: eq(orders.checkoutIdempotencyKey, parsed.data.idempotencyKey) });
+      if (existingOrder && existingOrder.customerEmail.toLowerCase() === parsed.data.customerEmail.toLowerCase() && existingOrder.paymentStatus === "pending" && existingOrder.reservationStatus === "active") {
+        if (existingOrder.paymentAuthorizationUrl) return { success: true, authorizationUrl: existingOrder.paymentAuthorizationUrl };
+        return { success: false, message: "Your payment is still being prepared. Please try again in a moment." };
+      }
+    }
     return {
       success: false,
       message:

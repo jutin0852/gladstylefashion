@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { addCartItems, type AddToCartResult } from "./cart-operations";
+import { multiplyNairaDecimal, sumNairaDecimals } from "@/lib/money";
 
 export type StoreProduct = {
   id: string;
@@ -12,6 +13,9 @@ export type StoreProduct = {
   isActive: boolean | null;
   featured: boolean | null;
   inventoryCount: number | null;
+  inventoryMigrationStatus: string;
+  inventoryReconciliationRequired: boolean;
+  variants: { id: string; size: string; sku: string; inventoryCount: number; isActive: boolean }[];
   images: { id: number; imageUrl: string; altText: string | null }[];
   category: { name: string; slug?: string } | null;
   sizes?: string[] | null;
@@ -25,12 +29,12 @@ export type ProductCustomizations = {
   customerHeight?: string;
   notes?: string;
 };
-export type CartItem = StoreProduct & { quantity: number; size?: string; customizations?: ProductCustomizations };
+export type CartItem = StoreProduct & { quantity: number; variantId?: string; size?: string; customizations?: ProductCustomizations };
 
 type CartContextValue = {
   cart: CartItem[];
   cartCount: number;
-  cartTotal: number;
+  cartTotal: string;
   addToCart: (product: StoreProduct, size?: string, quantity?: number, customizations?: ProductCustomizations) => AddToCartResult;
   updateQuantity: (id: string, change: number, size?: string, customizations?: ProductCustomizations) => void;
   removeItem: (id: string, size?: string, customizations?: ProductCustomizations) => void;
@@ -59,7 +63,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         saveCart(
           savedItems
             .filter((item) => item.quantity > 0)
-            .map((item) => ({ ...item, size: item.size || "" })),
+            .map((item) => ({ ...item, price: String(item.price), size: item.size || "", variantId: item.variantId || undefined })),
         );
       } catch {
         window.localStorage.removeItem(storageKey);
@@ -80,7 +84,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   function updateQuantity(id: string, change: number, size = "", customizations?: ProductCustomizations) {
     const current = cartRef.current;
-    const existing = current.find((item) => item.id === id && item.size === size && JSON.stringify(item.customizations || {}) === JSON.stringify(customizations || {}));
+    const existing = current.find((item) => item.id === id && (item.inventoryMigrationStatus !== "migrated" ? !item.variantId : item.variantId === item.variants.find((variant) => variant.size === (size || "ONE_SIZE"))?.id) && JSON.stringify(item.customizations || {}) === JSON.stringify(customizations || {}));
     if (!existing) return;
     if (change > 0) {
       addToCart(existing, size, change, customizations);
@@ -89,7 +93,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveCart(
       current
         .map((item) =>
-          item.id === id && item.size === size && JSON.stringify(item.customizations || {}) === JSON.stringify(customizations || {})
+          item.id === id && item.variantId === existing.variantId && JSON.stringify(item.customizations || {}) === JSON.stringify(customizations || {})
             ? {
                 ...item,
                 quantity: item.quantity + change,
@@ -102,7 +106,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   function removeItem(id: string, size = "", customizations?: ProductCustomizations) {
     saveCart(
-      cartRef.current.filter((item) => !(item.id === id && item.size === size && JSON.stringify(item.customizations || {}) === JSON.stringify(customizations || {}))),
+      cartRef.current.filter((item) => !(item.id === id && (item.inventoryMigrationStatus !== "migrated" ? !item.variantId : item.variantId === item.variants.find((variant) => variant.size === (size || "ONE_SIZE"))?.id) && JSON.stringify(item.customizations || {}) === JSON.stringify(customizations || {}))),
     );
   }
 
@@ -111,10 +115,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       value={{
         cart,
         cartCount: cart.reduce((total, item) => total + item.quantity, 0),
-        cartTotal: cart.reduce(
-          (total, item) => total + Number(item.price) * item.quantity,
-          0,
-        ),
+        cartTotal: sumNairaDecimals(cart.map((item) => multiplyNairaDecimal(item.price, item.quantity))),
         addToCart,
         updateQuantity,
         removeItem,

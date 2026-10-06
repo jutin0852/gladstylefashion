@@ -4,12 +4,12 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { updateProduct } from "../../app/actions/manageProducts";
 import { getCategoryOptions } from "../../app/actions/manageCategories";
-import type { Product } from "../../lib/schema";
+import type { Product, ProductVariant } from "../../lib/schema";
 
 export function ProductEditForm({
   product,
 }: {
-  product: Product & { images: { imageUrl: string }[] };
+  product: Product & { images: { imageUrl: string }[]; variants: ProductVariant[] };
 }) {
   const [name, setName] = useState(product.productName);
   const [description, setDescription] = useState(product.description || "");
@@ -29,6 +29,8 @@ export function ProductEditForm({
   const [materials, setMaterials] = useState(product.materials || "");
   const [care, setCare] = useState(product.careInstructions || "");
   const [isActive, setIsActive] = useState(product.isActive ?? true);
+  const [variants, setVariants] = useState(product.variants.map((variant) => ({ id: variant.id, size: variant.size, sku: variant.sku, inventoryCount: variant.inventoryCount, isActive: variant.isActive })));
+  const [newSize, setNewSize] = useState("");
   const [featured, setFeatured] = useState(product.featured ?? false);
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -43,8 +45,8 @@ export function ProductEditForm({
       void updateProduct(product.id, {
         productName: name,
         description,
-        price: Number(price),
-        costPrice: costPrice ? Number(costPrice) : undefined,
+        price,
+        costPrice: costPrice || undefined,
         inventoryCount: Number(inventory),
         sku,
         categoryId,
@@ -56,13 +58,8 @@ export function ProductEditForm({
         careInstructions: care,
         isActive,
         featured,
-      }).then((result) =>
-        setMessage(
-          result.success
-            ? "Product saved."
-            : result.message || "Could not save product.",
-        ),
-      );
+        variants,
+      }).then((result) => setMessage(result.success ? "Product saved." : result.message || "Could not save product.")).catch((error: unknown) => setMessage(error instanceof Error ? error.message : "Could not save product."));
     });
   }
 
@@ -203,6 +200,32 @@ export function ProductEditForm({
           Featured
         </label>
       </div>
+      <section className="space-y-3 border-t pt-5">
+        <div>
+          <h2 className="text-sm font-semibold">Size inventory</h2>
+          <p className="mt-1 text-xs text-muted-foreground">Each size is reserved independently. Saving all sizes reconciles this product.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <input value={newSize} onChange={(event) => setNewSize(event.target.value)} placeholder="Add size" className="rounded-md border bg-background px-3 py-2 text-sm" />
+          <button type="button" className="rounded-md border px-3 py-2 text-sm" onClick={() => {
+            const size = newSize.trim();
+            if (!size || variants.some((variant) => variant.size.toLowerCase() === size.toLowerCase())) return;
+            setVariants((current) => [...current, { id: `new-${crypto.randomUUID()}`, size, sku: `${sku || product.sku || `GS-${product.id}`}-${size.toUpperCase().replace(/[^A-Z0-9]+/g, "-")}`, inventoryCount: 0, isActive: true }]);
+            setNewSize("");
+          }}>Add size</button>
+        </div>
+        <div className="overflow-x-auto border">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b bg-muted/40"><tr><th className="p-3">Size</th><th className="p-3">SKU</th><th className="p-3">Available</th><th className="p-3">Active</th></tr></thead>
+            <tbody>{variants.map((variant, index) => <tr key={variant.id} className="border-b last:border-0">
+              <td className="p-3 font-medium">{variant.size === "ONE_SIZE" ? "One size" : variant.size}</td>
+              <td className="p-3 text-xs text-muted-foreground">{variant.sku}</td>
+              <td className="p-3"><input aria-label={`${variant.size} inventory`} type="number" min="0" value={variant.inventoryCount} onChange={(event) => setVariants((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, inventoryCount: Math.max(0, Number(event.target.value) || 0) } : item))} className="w-24 rounded-md border bg-background px-3 py-2" /></td>
+              <td className="p-3"><label className="flex items-center gap-2"><input type="checkbox" checked={variant.isActive} onChange={(event) => setVariants((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, isActive: event.target.checked } : item))} /> Active</label></td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+      </section>
       {message && <p className="text-sm text-muted-foreground">{message}</p>}
       <div className="flex gap-3">
         <button

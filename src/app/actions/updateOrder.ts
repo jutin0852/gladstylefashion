@@ -2,10 +2,11 @@
 
 import { requireAdmin } from "../../lib/admin-auth";
 import { transactionDb } from "../../lib/transaction-db";
-import { orderFulfillmentEvents, orders, products } from "../../lib/schema";
+import { orderFulfillmentEvents, orders, products, productVariants } from "../../lib/schema";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { brandedEmail, escapeEmailHtml, sendEmail } from "@/lib/email";
+import { getReservationMinutes, releaseInventoryReservation } from "@/lib/inventory-reservations";
 
 const statuses = [
   "pending",
@@ -42,7 +43,8 @@ export async function changeOrderStatus(orderId: string, status: string) {
       if (!allowedTransitions[currentStatus]?.includes(nextStatus)) throw new Error(`Cannot change an ${currentStatus} order to ${nextStatus}.`);
       if (nextStatus === "cancelled" && order.paymentStatus === "paid") {
         for (const item of order.items) {
-          if (item.productId) await tx.update(products).set({ inventoryCount: sql`coalesce(${products.inventoryCount}, 0) + ${item.quantity}`, updatedAt: new Date() }).where(eq(products.id, item.productId));
+          if (item.variantId) await tx.update(productVariants).set({ inventoryCount: sql`${productVariants.inventoryCount} + ${item.quantity}`, updatedAt: new Date() }).where(eq(productVariants.id, item.variantId));
+          else if (item.productId) await tx.update(products).set({ inventoryCount: sql`coalesce(${products.inventoryCount}, 0) + ${item.quantity}`, updatedAt: new Date() }).where(eq(products.id, item.productId));
         }
       }
       const now = new Date();
@@ -111,10 +113,14 @@ export async function clearAbandonedCheckout(orderId: string) {
       if (order.status !== "pending" || order.paymentStatus === "paid") {
         throw new Error("Only unpaid, unfulfilled checkout records can be removed.");
       }
-      const ageInMinutes = order.createdAt ? (Date.now() - order.createdAt.getTime()) / 60_000 : 31;
-      if (order.paymentStatus === "pending" && ageInMinutes < 30) {
-        throw new Error("Wait 30 minutes before clearing a pending payment so an active checkout is not removed.");
+      const ageInMinutes = order.createdAt ? (Date.now() - order.createdAt.getTime()) / 60_000 : getReservationMinutes() + 1;
+      if (order.reservationStatus === "active" && order.reservationExpiresAt && order.reservationExpiresAt > new Date()) {
+        throw new Error("Wait until this reservation expires before clearing the checkout.");
       }
+      if (order.reservationStatus === "active" && ageInMinutes < getReservationMinutes()) {
+        throw new Error("Wait until this reservation expires before clearing the checkout.");
+      }
+      if (order.reservationStatus === "active") await releaseInventoryReservation(tx, orderId, "expired");
       await tx.delete(orders).where(eq(orders.id, orderId));
     });
   } catch (error) {

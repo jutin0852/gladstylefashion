@@ -8,6 +8,7 @@ import BrandLogo from "./brand-logo";
 import { primaryProductAlt, primaryProductImage } from "./brand-assets";
 import { useCart } from "./cart-context";
 import { formatStorePrice } from "./currency";
+import { multiplyNairaDecimal } from "@/lib/money";
 
 const fields = [
   ["customerName", "Full name", "text"],
@@ -23,21 +24,25 @@ export default function CheckoutForm({ initialCustomer }: { initialCustomer?: { 
   const { cart, cartTotal, updateQuantity } = useCart();
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   async function submit(formData: FormData) {
     setPending(true);
     setMessage("");
     formData.set("items", JSON.stringify(cart.map((item) => ({
       productId: item.id,
+      variantId: item.variantId,
       quantity: item.quantity,
       size: item.size,
       customizations: item.customizations,
     }))));
+    formData.set("idempotencyKey", idempotencyKey);
     const result = await createOrder(formData);
     if (result.success) {
       window.location.assign(result.authorizationUrl);
     } else {
       setPending(false);
+      setIdempotencyKey(crypto.randomUUID());
       setMessage(result.message);
     }
   }
@@ -71,6 +76,7 @@ export default function CheckoutForm({ initialCustomer }: { initialCustomer?: { 
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d3146d]">Checkout</p>
           <h1 className="mt-4 text-4xl font-medium leading-[0.96] tracking-[-0.055em] sm:text-6xl">Where should we send your order?</h1>
           <form action={submit} className="mt-10 max-w-2xl">
+            <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
             <h2 className="border-b border-black pb-4 text-[11px] font-semibold uppercase tracking-[0.16em]">Contact and delivery</h2>
             <div className="mt-6 grid gap-x-5 gap-y-6 sm:grid-cols-2">
               {fields.map(([name, label, type]) => (
@@ -113,7 +119,7 @@ export default function CheckoutForm({ initialCustomer }: { initialCustomer?: { 
                       {item.size && <p className="mt-1 text-xs text-black/60">Size {item.size}</p>}
                       {item.customizations?.notes && <p className="mt-1 text-xs text-black/50">Note: {item.customizations.notes}</p>}
                     </div>
-                    <span className="text-sm font-medium">{formatStorePrice(Number(item.price) * item.quantity)}</span>
+                    <span className="text-sm font-medium">{formatStorePrice(multiplyNairaDecimal(item.price, item.quantity))}</span>
                   </div>
                   <div className="mt-3 flex items-center border border-black bg-white w-fit">
                     <button type="button" onClick={() => updateQuantity(item.id, -1, item.size, item.customizations)} className="grid size-8 place-items-center transition-colors hover:bg-black hover:text-white" aria-label={`Remove one ${item.productName}`}><Minus size={14} strokeWidth={1.5} /></button>

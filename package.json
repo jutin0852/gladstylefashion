@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/run-tests.cjs src/components/store/cart-operations.test.ts src/lib/inventory-reservation.test.ts src/lib/product-variant-inventory.test.ts src/lib/money.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

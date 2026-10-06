@@ -9,6 +9,8 @@ import {
   serial,
   varchar,
   uniqueIndex,
+  index,
+  check,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { sql } from "drizzle-orm";
@@ -112,11 +114,29 @@ export const products = pgTable("products", {
   isActive: boolean("is_active").default(true),
   featured: boolean("featured").default(false),
   sizes: jsonb("sizes").$type<string[]>().default([]), // ["XS", "S", "M", "L", "XL"]
+  inventoryMigrationStatus: text("inventory_migration_status").notNull().default("legacy"), // legacy, needs_reconciliation, migrated
+  inventoryReconciliationRequired: boolean("inventory_reconciliation_required").notNull().default(false),
   materials: text("materials"),
   careInstructions: text("care_instructions"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+export const productVariants = pgTable("product_variants", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  productId: text("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  size: text("size").notNull(),
+  sku: text("sku").notNull().unique(),
+  inventoryCount: integer("inventory_count").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("product_variants_product_size_unique").on(table.productId, table.size),
+  index("product_variants_product_active_idx").on(table.productId, table.isActive),
+  // Inventory is checked in SQL during reservation; this constraint is the final safety net.
+  check("product_variants_inventory_nonnegative", sql`${table.inventoryCount} >= 0`),
+]);
 
 export const productImages = pgTable("product_images", {
   id: serial("id").primaryKey(),
@@ -148,8 +168,14 @@ export const orders = pgTable("orders", {
     postalCode: string;
     country: string;
   }>(),
+  checkoutIdempotencyKey: text("checkout_idempotency_key"),
   paymentIntentId: text("payment_intent_id"),
-  paymentStatus: text("payment_status").default("pending"), // pending, paid, failed, refunded
+  paymentAuthorizationUrl: text("payment_authorization_url"),
+  paymentStatus: text("payment_status").default("pending"), // pending, paid, payment_initialization_failed, expired, refund_required
+  reservationStatus: text("reservation_status").notNull().default("none"), // none, active, converted, released
+  reservationExpiresAt: timestamp("reservation_expires_at"),
+  reservationReleasedAt: timestamp("reservation_released_at"),
+  reservationReleaseReason: text("reservation_release_reason"),
   carrier: text("carrier"),
   trackingNumber: text("tracking_number"),
   shippedAt: timestamp("shipped_at"),
@@ -158,6 +184,7 @@ export const orders = pgTable("orders", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
+  uniqueIndex("orders_checkout_idempotency_key_unique").on(table.checkoutIdempotencyKey).where(sql`${table.checkoutIdempotencyKey} is not null`),
   uniqueIndex("orders_payment_intent_id_unique").on(table.paymentIntentId).where(sql`${table.paymentIntentId} is not null`),
 ]);
 
@@ -217,6 +244,8 @@ export const orderItems = pgTable("order_items", {
     onDelete: "cascade",
   }),
   productId: text("product_id").references(() => products.id),
+  variantId: text("variant_id").references(() => productVariants.id, { onDelete: "set null" }),
+  variantSku: text("variant_sku"),
   productName: text("product_name").notNull(), // Store at time of order in case product changes
   productImage: text("product_image"),
   size: text("size"), // Size selected at time of order
@@ -245,12 +274,18 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
 // Product Relations
 export const productsRelations = relations(products, ({ one, many }) => ({
   images: many(productImages),
+  variants: many(productVariants),
 
   category: one(categories, {
     fields: [products.categoryId],
     references: [categories.id],
   }), // Each product belongs to one category
   orderItems: many(orderItems), // One product can be in many order items
+}));
+
+export const productVariantsRelations = relations(productVariants, ({ one, many }) => ({
+  product: one(products, { fields: [productVariants.productId], references: [products.id] }),
+  orderItems: many(orderItems),
 }));
 
 export const productImagesRelations = relations(productImages, ({ one }) => ({
@@ -284,6 +319,10 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
     fields: [orderItems.productId],
     references: [products.id],
   }), // Each item is one product
+  variant: one(productVariants, {
+    fields: [orderItems.variantId],
+    references: [productVariants.id],
+  }),
 }));
 
 // Types for TypeScript
@@ -293,6 +332,8 @@ export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type Product = typeof products.$inferSelect;
 export type NewProduct = typeof products.$inferInsert;
+export type ProductVariant = typeof productVariants.$inferSelect;
+export type NewProductVariant = typeof productVariants.$inferInsert;
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;

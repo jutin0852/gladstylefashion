@@ -4,6 +4,7 @@ import React from "react";
 import { getCurrentUser } from "../../lib/admin-auth";
 import { getAdminAnalytics } from "../../lib/admin/queries/analytics";
 import { LiveOrdersTable } from "../../components/admin/live-orders-table";
+import { formatStorePrice } from "@/components/store/currency";
 
 export default async function Dashboard() {
   await getCurrentUser();
@@ -11,7 +12,7 @@ export default async function Dashboard() {
   const cards = [
     {
       description: "Paid sales",
-      title: `₦${analytics.cards.totalSales.toLocaleString("en-NG")}`,
+      title: formatStorePrice(analytics.cards.totalSales),
       action: "Live",
       footerMain: "Revenue from paid orders",
       footerSub: "Calculated from the orders table",

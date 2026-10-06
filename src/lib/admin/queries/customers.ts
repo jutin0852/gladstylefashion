@@ -1,6 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { orders, user } from "../../schema";
+import { sumNairaDecimals } from "@/lib/money";
 
 export type AdminCustomer = {
   email: string;
@@ -36,6 +37,6 @@ export async function getAdminCustomer(email: string) {
     db.query.orders.findMany({ where: eq(orders.customerEmail, email), with: { items: true }, orderBy: [desc(orders.createdAt)] }),
   ]);
   if (!customerOrders.length) return null;
-  const totalSpent = customerOrders.reduce((total, order) => total + Number(order.totalAmount), 0);
+  const totalSpent = sumNairaDecimals(customerOrders.map((order) => order.totalAmount));
   return { email, name: customerOrders[0].customerName, phone: customerOrders.find((order) => order.customerPhone)?.customerPhone || profile[0]?.phone || null, registeredAt: profile[0]?.createdAt || null, totalSpent, orders: customerOrders };
 }

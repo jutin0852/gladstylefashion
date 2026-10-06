@@ -16,7 +16,7 @@ export type AdminOrder = {
 
 export type AdminAnalytics = {
   cards: {
-    totalSales: number;
+    totalSales: string;
     totalOrders: number;
     customers: number;
     lowStock: number;
@@ -74,7 +74,7 @@ export async function getAdminAnalytics(): Promise<AdminAnalytics> {
 
   return {
     cards: {
-      totalSales: Number(sales[0]?.total || 0),
+      totalSales: String(sales[0]?.total || "0.00"),
       totalOrders: Number(orderCount[0]?.count || 0),
       customers: Number(customerCount[0]?.count || 0),
       lowStock: Number(lowStock[0]?.count || 0),

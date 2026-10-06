@@ -31,6 +31,7 @@ type ProductFormValues = z.infer<typeof ProductSchema>;
 export default function AddProduct() {
   const [previews, setPreviews] = React.useState<string[]>([]);
   const [images, setImages] = React.useState<File[]>([]);
+  const [sizeInventory, setSizeInventory] = React.useState<Record<string, number>>({});
   const [categories, setCategories] = React.useState<{ id: string; name: string }[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const fileReplaceRef = React.useRef<HTMLInputElement | null>(null);
@@ -40,8 +41,8 @@ export default function AddProduct() {
     defaultValues: {
       productName: "",
       description: "",
-      price: 0,
-      costPrice: 0,
+      price: "",
+      costPrice: "",
       inventoryCount: 0,
       isActive: true,
       featured: false,
@@ -77,6 +78,7 @@ export default function AddProduct() {
         formData.append(key, String(value)); // numbers must be converted
       }
     });
+    formData.set("variantInventory", JSON.stringify(sizeInventory));
 
     const slugExists = await checkSlugExists(data.productName);
     if (slugExists) {
@@ -232,11 +234,7 @@ export default function AddProduct() {
                   <Input
                     {...field}
                     id="price"
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : undefined,
-                      )
-                    }
+                    onChange={(e) => field.onChange(e.target.value)}
                     aria-invalid={fieldState.invalid}
                     placeholder="Enter product price"
                     autoComplete="off"
@@ -260,11 +258,7 @@ export default function AddProduct() {
                     aria-invalid={fieldState.invalid}
                     placeholder="Enter cost price"
                     autoComplete="off"
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : undefined,
-                      )
-                    }
+                    onChange={(e) => field.onChange(e.target.value)}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
@@ -367,6 +361,23 @@ export default function AddProduct() {
                 </Field>
               )}
             />
+            <div className="space-y-2">
+              <label htmlFor="size-inventory" className="text-sm font-medium">Inventory by size</label>
+              <p className="text-xs text-muted-foreground">Enter one quantity per size. Example: S:2, M:5, L:1. Leave blank for a one-size product.</p>
+              <Input
+                id="size-inventory"
+                value={Object.entries(sizeInventory).map(([size, count]) => `${size}:${count}`).join(", ")}
+                onChange={(event) => {
+                  const next: Record<string, number> = {};
+                  for (const entry of event.target.value.split(",")) {
+                    const [size, rawCount] = entry.split(":").map((part) => part.trim());
+                    if (size && rawCount !== undefined && /^\d+$/.test(rawCount)) next[size] = Number(rawCount);
+                  }
+                  setSizeInventory(next);
+                }}
+                placeholder="S:2, M:5, L:1"
+              />
+            </div>
             <Controller
               name="materials"
               control={form.control}
