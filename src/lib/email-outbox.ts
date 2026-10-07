@@ -154,3 +154,18 @@ export async function processEmailOutbox() {
 
   return { claimed: rows.length, sent, retrying, failed };
 }
+
+/**
+ * Drain after a business transaction has committed without allowing an email
+ * provider or a worker/database hiccup to change the business result.
+ */
+export async function drainEmailOutboxBestEffort() {
+  try {
+    return await processEmailOutbox();
+  } catch (error) {
+    console.error("Transactional email outbox drain failed", {
+      error: sanitizeEmailError(error),
+    });
+    return null;
+  }
+}

@@ -6,7 +6,7 @@ import { orderFulfillmentEvents, orders, products, productVariants } from "../..
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getReservationMinutes, releaseInventoryReservation } from "@/lib/inventory-reservations";
-import { queueEmailOutbox } from "@/lib/email-outbox";
+import { drainEmailOutboxBestEffort, queueEmailOutbox } from "@/lib/email-outbox";
 
 const statuses = [
   "pending",
@@ -89,6 +89,7 @@ export async function changeOrderStatus(orderId: string, status: string) {
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "Unable to update the order." };
   }
+  if (emailNotification) await drainEmailOutboxBestEffort();
   revalidatePath("/admin");
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);

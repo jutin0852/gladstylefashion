@@ -5,7 +5,7 @@ import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { transactionDb } from "@/lib/transaction-db";
 import { emailOutbox, staffInvitations, user } from "@/lib/schema";
-import { queueEmailOutbox } from "@/lib/email-outbox";
+import { drainEmailOutboxBestEffort, queueEmailOutbox } from "@/lib/email-outbox";
 import { getSessionUser, requireOwner } from "@/lib/admin-auth";
 
 const hash = (token: string) => createHash("sha256").update(token).digest("hex");
@@ -34,6 +34,7 @@ export async function inviteStaff(email: string) {
     });
     return createdInvitation;
   });
+  await drainEmailOutboxBestEffort();
   revalidatePath("/admin/staff");
   return { invitationId: invitation.id };
 }

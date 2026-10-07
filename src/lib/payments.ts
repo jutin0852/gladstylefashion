@@ -5,7 +5,7 @@ import { orders } from "./schema";
 import { matchesPaystackPayment, verifyPaystackPayment } from "./paystack";
 import { isReservationActive, releaseInventoryReservation } from "./inventory-reservations";
 import { parseNairaToKobo } from "./money";
-import { queueEmailOutbox } from "./email-outbox";
+import { drainEmailOutboxBestEffort, queueEmailOutbox } from "./email-outbox";
 
 export type PaymentVerificationResult =
   | { state: "paid"; orderNumber: string }
@@ -30,7 +30,10 @@ async function queueRefundRequiredEmail(tx: Parameters<Parameters<typeof transac
 export async function verifyAndFinalizePaystackPayment(reference: string): Promise<PaymentVerificationResult> {
   const order = await db.query.orders.findFirst({ where: eq(orders.paymentIntentId, reference) });
   if (!order) return { state: "failed", message: "We could not find this payment." };
-  if (order.paymentStatus === "paid") return { state: "paid", orderNumber: order.orderNumber };
+  if (order.paymentStatus === "paid") {
+    await drainEmailOutboxBestEffort();
+    return { state: "paid", orderNumber: order.orderNumber };
+  }
 
   let payment;
   try {
@@ -60,6 +63,7 @@ export async function verifyAndFinalizePaystackPayment(reference: string): Promi
       await tx.update(orders).set({ paymentStatus: "refund_required", updatedAt: new Date() }).where(and(eq(orders.id, order.id), ne(orders.paymentStatus, "paid")));
       await queueRefundRequiredEmail(tx, order, "Paystack payment details did not match the order.");
     });
+    await drainEmailOutboxBestEffort();
     return { state: "review", orderNumber: order.orderNumber };
   }
 
@@ -103,6 +107,7 @@ export async function verifyAndFinalizePaystackPayment(reference: string): Promi
         orderNumber: lockedOrder.orderNumber,
       } as const;
     });
+    await drainEmailOutboxBestEffort();
     return { state: result.state, orderNumber: result.orderNumber } as PaymentVerificationResult;
   } catch {
     await transactionDb.transaction(async (tx) => {
@@ -110,6 +115,7 @@ export async function verifyAndFinalizePaystackPayment(reference: string): Promi
       await tx.update(orders).set({ paymentStatus: "refund_required", updatedAt: new Date() }).where(and(eq(orders.id, order.id), ne(orders.paymentStatus, "paid")));
       await queueRefundRequiredEmail(tx, order, "Payment finalization failed and requires manual review.");
     });
+    await drainEmailOutboxBestEffort();
     return { state: "review", orderNumber: order.orderNumber };
   }
 }
