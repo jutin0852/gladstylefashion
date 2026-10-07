@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import { formatStorePrice } from "../store/currency";
 
 export function LiveOrdersTable({ orders }: { orders: AdminOrder[] }) {
   return (
@@ -49,7 +50,7 @@ export function LiveOrdersTable({ orders }: { orders: AdminOrder[] }) {
                   </div>
                 </TableCell>
                 <TableCell>{order.itemCount}</TableCell>
-                <TableCell>₦{Number(order.totalAmount).toLocaleString("en-NG")}</TableCell>
+                <TableCell>{formatStorePrice(order.totalAmount)}</TableCell>
                 <TableCell>
                   <Badge
                     variant={

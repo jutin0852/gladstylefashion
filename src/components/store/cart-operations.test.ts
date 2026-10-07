@@ -6,7 +6,7 @@ import type { CartItem, StoreProduct } from "./cart-context";
 const product: StoreProduct = {
   id: "shirt", productName: "Shirt", slug: "shirt", description: null,
   price: "20", isActive: true, featured: false, inventoryCount: 3,
-  images: [], category: null,
+  images: [], category: null, inventoryMigrationStatus: "legacy", inventoryReconciliationRequired: false, variants: [],
 };
 const row = (quantity: number, size = "M"): CartItem => ({ ...product, quantity, size });
 

@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { isPositiveNairaDecimal, isValidNairaDecimal } from "@/lib/money";
 
 export const ProductSchema = z.object({
   productName: z
@@ -6,8 +7,8 @@ export const ProductSchema = z.object({
     .trim()
     .min(3, "Product name must be at least 3 characters"),
   description: z.string().optional(),
-  price: z.number().positive("Price must be greater than zero"),
-  costPrice: z.number().min(0).optional(),
+  price: z.string().trim().refine(isPositiveNairaDecimal, "Enter a price greater than zero with at most two decimal places"),
+  costPrice: z.string().trim().refine((value) => value === "" || isValidNairaDecimal(value), "Enter a valid cost price with at most two decimal places").optional(),
   categoryId: z.string().optional(),
   inventoryCount: z.number().int().min(0).optional(),
   sku: z.string().optional(),

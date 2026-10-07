@@ -8,6 +8,8 @@ import { createProduct } from "../../lib/admin/queries/product";
 import { db } from "../../lib/db";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "../../lib/admin-auth";
+import { revalidatePath } from "next/cache";
+import { koboToNairaDecimal, parseNairaToKobo } from "@/lib/money";
 
 // import { revalidatePath } from "next/cache";
 
@@ -31,9 +33,9 @@ export async function createProductAction(formData: FormData) {
   const validatedProductFields = ProductSchema.safeParse({
     productName: formData.get("productName"),
     description: formData.get("description"),
-    price: Number(formData.get("price")),
+    price: String(formData.get("price") || ""),
     costPrice: formData.get("costPrice")
-      ? Number(formData.get("costPrice"))
+      ? String(formData.get("costPrice"))
       : undefined,
     inventoryCount: Number(formData.get("inventoryCount")),
     images,
@@ -49,11 +51,33 @@ export async function createProductAction(formData: FormData) {
     careInstructions: formData.get("careInstructions") || undefined,
   });
 
+  const variantInventory: Record<string, number> = {};
+  try {
+    const raw = JSON.parse(String(formData.get("variantInventory") || "{}")) as Record<string, unknown>;
+    for (const [size, value] of Object.entries(raw)) {
+      const count = Number(value);
+      if (!Number.isInteger(count) || count < 0) throw new Error("invalid variant inventory");
+      variantInventory[size] = count;
+    }
+  } catch {
+    return { message: "Enter a valid non-negative inventory count for every size." };
+  }
+
   if (!validatedProductFields.success) {
     return {
       errors: validatedProductFields.error.flatten().fieldErrors,
       message: "Validation failed",
     };
+  }
+  if ((validatedProductFields.data.sizes?.length || 0) > 0 && validatedProductFields.data.sizes?.some((size) => variantInventory[size] === undefined)) {
+    return { message: "Enter an inventory count for every listed size before publishing." };
+  }
+  const priceKobo = parseNairaToKobo(validatedProductFields.data.price);
+  const costPriceKobo = validatedProductFields.data.costPrice
+    ? parseNairaToKobo(validatedProductFields.data.costPrice)
+    : null;
+  if (priceKobo <= BigInt(0)) {
+    return { message: "Price must be greater than zero." };
   }
   const dbData = {
     productName: validatedProductFields.data.productName, // Map productName to name
@@ -61,14 +85,15 @@ export async function createProductAction(formData: FormData) {
       .toLowerCase()
       .replace(/\s+/g, "-"), // Generate slug
     description: validatedProductFields.data.description ?? null,
-    price: validatedProductFields.data.price.toString(), // Convert number to string
-    costPrice: validatedProductFields.data.costPrice?.toString() ?? null,
+    price: koboToNairaDecimal(priceKobo),
+    costPrice: costPriceKobo === null ? null : koboToNairaDecimal(costPriceKobo),
     inventoryCount: validatedProductFields.data.inventoryCount ?? null,
     categoryId: validatedProductFields.data.categoryId ?? null,
     sku: validatedProductFields.data.sku ?? null,
     isActive: validatedProductFields.data.isActive,
     featured: validatedProductFields.data.featured,
     sizes: validatedProductFields.data.sizes ?? [],
+    inventoryMigrationStatus: "migrated",
     materials: validatedProductFields.data.materials ?? null,
     careInstructions: validatedProductFields.data.careInstructions ?? null,
   };
@@ -78,9 +103,11 @@ export async function createProductAction(formData: FormData) {
     const product = await createProduct(
       newProduct,
       validatedProductFields.data.images!,
+      variantInventory,
     );
 
-    //     revalidatePath("/admin/products");
+    revalidatePath("/");
+    revalidatePath("/sitemap.xml");
 
     return {
       success: true,

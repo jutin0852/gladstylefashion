@@ -2,10 +2,11 @@
 
 import { requireAdmin } from "../../lib/admin-auth";
 import { transactionDb } from "../../lib/transaction-db";
-import { orderFulfillmentEvents, orders, products } from "../../lib/schema";
+import { orderFulfillmentEvents, orders, products, productVariants } from "../../lib/schema";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { brandedEmail, escapeEmailHtml, sendEmail } from "@/lib/email";
+import { getReservationMinutes, releaseInventoryReservation } from "@/lib/inventory-reservations";
+import { queueEmailOutbox } from "@/lib/email-outbox";
 
 const statuses = [
   "pending",
@@ -29,9 +30,9 @@ export async function changeOrderStatus(orderId: string, status: string) {
     return { success: false, message: "Invalid order status." };
   }
   const nextStatus = status as (typeof statuses)[number];
-  let processingNotification: { customerEmail: string; customerName: string; orderNumber: string } | null = null;
+  let emailNotification: { status: "processing" | "shipped" | "delivered" | "cancelled" } | null = null;
   try {
-    processingNotification = await transactionDb.transaction(async (tx) => {
+    emailNotification = await transactionDb.transaction(async (tx) => {
       const order = await tx.query.orders.findFirst({ where: eq(orders.id, orderId), with: { items: true } });
       if (!order) throw new Error("Order not found.");
       if (nextStatus !== "cancelled" && order.paymentStatus !== "paid") {
@@ -42,7 +43,8 @@ export async function changeOrderStatus(orderId: string, status: string) {
       if (!allowedTransitions[currentStatus]?.includes(nextStatus)) throw new Error(`Cannot change an ${currentStatus} order to ${nextStatus}.`);
       if (nextStatus === "cancelled" && order.paymentStatus === "paid") {
         for (const item of order.items) {
-          if (item.productId) await tx.update(products).set({ inventoryCount: sql`coalesce(${products.inventoryCount}, 0) + ${item.quantity}`, updatedAt: new Date() }).where(eq(products.id, item.productId));
+          if (item.variantId) await tx.update(productVariants).set({ inventoryCount: sql`${productVariants.inventoryCount} + ${item.quantity}`, updatedAt: new Date() }).where(eq(productVariants.id, item.variantId));
+          else if (item.productId) await tx.update(products).set({ inventoryCount: sql`coalesce(${products.inventoryCount}, 0) + ${item.quantity}`, updatedAt: new Date() }).where(eq(products.id, item.productId));
         }
       }
       const now = new Date();
@@ -65,12 +67,21 @@ export async function changeOrderStatus(orderId: string, status: string) {
               : `Order marked ${nextStatus}.`,
       });
 
-      if (nextStatus === "processing") {
-        return {
-          customerEmail: order.customerEmail,
-          customerName: order.customerName,
-          orderNumber: order.orderNumber,
-        };
+      if (["processing", "shipped", "delivered", "cancelled"].includes(nextStatus)) {
+        const status = nextStatus as "processing" | "shipped" | "delivered" | "cancelled";
+        await queueEmailOutbox(tx, {
+          dedupeKey: `order-${status}:${order.id}`,
+          eventType: `order-${status}` as "order-processing" | "order-shipped" | "order-delivered" | "order-cancelled",
+          recipient: order.customerEmail,
+          orderId: order.id,
+          payload: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            customerName: order.customerName,
+            status,
+          },
+        });
+        return { status };
       }
 
       return null;
@@ -82,24 +93,7 @@ export async function changeOrderStatus(orderId: string, status: string) {
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);
 
-  if (processingNotification) {
-    try {
-      await sendEmail({
-        to: processingNotification.customerEmail,
-        subject: `Your Glad Style Fashion order ${processingNotification.orderNumber} is being prepared`,
-        text: `Hello ${processingNotification.customerName}, your order ${processingNotification.orderNumber} is now being processed. We are preparing it and will update you when it has been sent.`,
-        html: brandedEmail({ title: "We are preparing your order.", eyebrow: `Order ${escapeHtml(processingNotification.orderNumber)}`, intro: `Hello ${escapeEmailHtml(processingNotification.customerName)}. Your order is now being processed.`, body: "We are preparing your pieces carefully and will update you when your order has been sent.", ctaLabel: "Visit the store", ctaUrl: process.env.NEXT_PUBLIC_APP_URL || "https://gladstylefashion.com" }),
-      });
-    } catch {
-      return { success: true, message: "Order updated, but the processing email could not be sent." };
-    }
-  }
-
-  return { success: true, message: processingNotification ? "Order updated and processing email sent." : "Order updated." };
-}
-
-function escapeHtml(value: string) {
-  return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character] || character);
+  return { success: true, message: emailNotification ? `Order updated and ${emailNotification.status} email queued.` : "Order updated." };
 }
 
 export async function clearAbandonedCheckout(orderId: string) {
@@ -111,10 +105,14 @@ export async function clearAbandonedCheckout(orderId: string) {
       if (order.status !== "pending" || order.paymentStatus === "paid") {
         throw new Error("Only unpaid, unfulfilled checkout records can be removed.");
       }
-      const ageInMinutes = order.createdAt ? (Date.now() - order.createdAt.getTime()) / 60_000 : 31;
-      if (order.paymentStatus === "pending" && ageInMinutes < 30) {
-        throw new Error("Wait 30 minutes before clearing a pending payment so an active checkout is not removed.");
+      const ageInMinutes = order.createdAt ? (Date.now() - order.createdAt.getTime()) / 60_000 : getReservationMinutes() + 1;
+      if (order.reservationStatus === "active" && order.reservationExpiresAt && order.reservationExpiresAt > new Date()) {
+        throw new Error("Wait until this reservation expires before clearing the checkout.");
       }
+      if (order.reservationStatus === "active" && ageInMinutes < getReservationMinutes()) {
+        throw new Error("Wait until this reservation expires before clearing the checkout.");
+      }
+      if (order.reservationStatus === "active") await releaseInventoryReservation(tx, orderId, "expired");
       await tx.delete(orders).where(eq(orders.id, orderId));
     });
   } catch (error) {

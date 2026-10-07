@@ -41,7 +41,8 @@ export default function ProductDetail({
   const [bagOpen, setBagOpen] = useState(false);
   const { cart, cartCount, removeItem } = useCart();
   const { feedback, addWithFeedback, dismissFeedback } = useCartFeedback();
-  const stock = product.inventoryCount ?? 0;
+  const selectedVariant = product.variants.find((variant) => variant.size === (size || "ONE_SIZE"));
+  const stock = product.inventoryMigrationStatus === "migrated" ? selectedVariant?.inventoryCount ?? 0 : product.inventoryCount ?? 0;
   const isCustomWear = product.category?.slug === "custom-traditional-wear";
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");
   const whatsappHref = whatsappNumber
@@ -117,9 +118,11 @@ export default function ProductDetail({
                   <span className="text-[#d3146d]">{size || "Select"}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {product.sizes.map((item) => (
-                    <button key={item} onClick={() => setSize(item)} className={`min-w-12 border px-4 py-3 text-xs font-semibold transition-colors active:scale-[0.98] ${size === item ? "border-[#d3146d] bg-[#d3146d] text-white" : "border-black bg-white hover:border-[#d3146d] hover:text-[#d3146d]"}`}>{item}</button>
-                  ))}
+                  {product.sizes.map((item) => {
+                    const itemVariant = product.variants.find((variant) => variant.size === item);
+                    const itemAvailable = product.inventoryMigrationStatus !== "migrated" || Boolean(itemVariant?.isActive && itemVariant.inventoryCount > 0);
+                    return <button key={item} disabled={!itemAvailable} onClick={() => setSize(item)} className={`min-w-12 border px-4 py-3 text-xs font-semibold transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${size === item ? "border-[#d3146d] bg-[#d3146d] text-white" : "border-black bg-white hover:border-[#d3146d] hover:text-[#d3146d]"}`}>{item}{!itemAvailable ? " · Sold out" : ""}</button>;
+                  })}
                 </div>
                 <details className="mt-5 text-sm">
                   <summary className="cursor-pointer font-medium underline underline-offset-4">Size guide</summary>

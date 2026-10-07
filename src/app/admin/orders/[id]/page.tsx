@@ -7,6 +7,7 @@ import { orders } from "@/lib/schema";
 import { FulfillmentControls } from "@/components/admin/fulfillment-controls";
 import { ClearAbandonedCheckout } from "@/components/admin/clear-abandoned-checkout";
 import { OrderItemsList } from "@/components/admin/order-items-list";
+import { EmailDeliveryStatus } from "@/components/admin/email-delivery-status";
 import { formatStorePrice } from "@/components/store/currency";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,6 +18,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     with: {
       items: true,
       fulfillmentEvents: { orderBy: (event, { desc }) => [desc(event.createdAt)] },
+        emailOutbox: { orderBy: (email, { desc }) => [desc(email.createdAt)] },
     },
   });
 
@@ -26,7 +28,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const canClear =
     order.status === "pending" &&
     order.paymentStatus !== "paid" &&
-    (order.paymentStatus === "failed" || !order.createdAt || Date.now() - order.createdAt.getTime() >= 30 * 60_000);
+    (order.reservationStatus === "released" || (order.reservationStatus === "active" && Boolean(order.reservationExpiresAt && order.reservationExpiresAt <= new Date())));
 
   return (
     <section className="@container/main flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
@@ -92,6 +94,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               </>
             ) : null}
           </div>
+
+          <EmailDeliveryStatus emails={order.emailOutbox.map((email) => ({
+            id: email.id,
+            eventType: email.eventType,
+            status: email.status,
+            attemptCount: email.attemptCount,
+            lastAttemptAt: email.lastAttemptAt,
+            sentAt: email.sentAt,
+            providerMessageId: email.providerMessageId,
+            lastError: email.lastError,
+          }))} />
 
           <div className="rounded-lg border p-4">
             <h2 className="font-medium">Fulfilment history</h2>

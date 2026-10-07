@@ -16,11 +16,16 @@ export function addCartItems(
   if (!Number.isInteger(quantity) || quantity < 1) {
     return reject("Choose a positive whole-number quantity.");
   }
+  const variant = product.variants.find((item) => item.size === (size || "ONE_SIZE"));
+  const cartVariantId = variant?.id;
   const inBag = cart.reduce(
-    (total, item) => total + (item.id === product.id ? item.quantity : 0),
+    (total, item) => total + (item.id === product.id && item.variantId === cartVariantId ? item.quantity : 0),
     0,
   );
-  const stock = product.inventoryCount ?? 0;
+  const stock = product.inventoryMigrationStatus === "migrated"
+    ? variant?.inventoryCount ?? 0
+    : product.inventoryCount ?? 0;
+  if (product.inventoryMigrationStatus === "migrated" && !variant) return reject("Choose an available size.");
   if (inBag > stock) {
     return reject(`Stock has changed. Only ${stock} available; please adjust your bag.`);
   }
@@ -31,14 +36,14 @@ export function addCartItems(
     return reject(`You can add only ${remaining} more. Please adjust your quantity.`);
   }
   const sameCustomizations = (item: CartItem) => JSON.stringify(item.customizations || {}) === JSON.stringify(customizations || {});
-  const existing = cart.some((item) => item.id === product.id && (item.size || "") === size && sameCustomizations(item));
+  const existing = cart.some((item) => item.id === product.id && item.variantId === cartVariantId && sameCustomizations(item));
   const nextCart = existing
     ? cart.map((item) =>
-        item.id === product.id && (item.size || "") === size && sameCustomizations(item)
+        item.id === product.id && item.variantId === cartVariantId && sameCustomizations(item)
           ? { ...item, quantity: item.quantity + quantity }
           : item,
       )
-    : [...cart, { ...product, quantity, size, customizations }];
+    : [...cart, { ...product, quantity, variantId: cartVariantId, size, customizations }];
   return {
     cart: nextCart,
     result: {

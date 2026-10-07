@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Check, ShoppingBag, X } from "lucide-react";
 import type { CartFeedback } from "./use-cart-feedback";
 import { formatStorePrice } from "./currency";
+import { multiplyNairaDecimal } from "@/lib/money";
 
 export default function CartAddToast({
   feedback,
@@ -41,7 +42,7 @@ export default function CartAddToast({
           <div className="min-w-0 flex-1">
             <p className="text-base font-medium leading-tight">{feedback.product.productName}</p>
             <p className="mt-1 text-xs text-black/60">{feedback.size ? `Size ${feedback.size}` : "Size to be confirmed"} | {bagQuantity} in your bag</p>
-            <p className="mt-2 text-sm font-medium">{formatStorePrice(Number(feedback.product.price) * feedback.quantity)}</p>
+            <p className="mt-2 text-sm font-medium">{formatStorePrice(multiplyNairaDecimal(feedback.product.price, feedback.quantity))}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">

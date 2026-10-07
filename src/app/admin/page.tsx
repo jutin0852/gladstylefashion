@@ -4,6 +4,7 @@ import React from "react";
 import { getCurrentUser } from "../../lib/admin-auth";
 import { getAdminAnalytics } from "../../lib/admin/queries/analytics";
 import { LiveOrdersTable } from "../../components/admin/live-orders-table";
+import { formatStorePrice } from "@/components/store/currency";
 
 export default async function Dashboard() {
   await getCurrentUser();
@@ -11,7 +12,7 @@ export default async function Dashboard() {
   const cards = [
     {
       description: "Paid sales",
-      title: `₦${analytics.cards.totalSales.toLocaleString("en-NG")}`,
+      title: formatStorePrice(analytics.cards.totalSales),
       action: "Live",
       footerMain: "Revenue from paid orders",
       footerSub: "Calculated from the orders table",
@@ -40,6 +41,22 @@ export default async function Dashboard() {
       footerMain: "Products with five or fewer left",
       footerSub: "Review inventory before promotion",
       trend: "down" as const,
+    },
+    {
+      description: "Email queue",
+      title: `${analytics.cards.pendingEmails}`,
+      action: "Live",
+      footerMain: "Pending or processing emails",
+      footerSub: "Delivery is handled by the protected worker",
+      trend: "up" as const,
+    },
+    {
+      description: "Email failures",
+      title: `${analytics.cards.failedEmails}`,
+      action: "Review",
+      footerMain: "Emails needing attention",
+      footerSub: "Open an order to retry its delivery",
+      trend: analytics.cards.failedEmails ? "down" as const : "up" as const,
     },
   ];
 

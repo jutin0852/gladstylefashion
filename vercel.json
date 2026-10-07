@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/release-reservations",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/process-email-outbox",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

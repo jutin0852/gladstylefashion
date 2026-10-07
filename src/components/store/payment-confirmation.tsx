@@ -20,11 +20,11 @@ export default function PaymentConfirmation({ result }: { result: { state: "paid
   const isPaid = result.state === "paid";
   const isPending = result.state === "pending";
   const Icon = isPaid ? Check : isPending ? Clock3 : TriangleAlert;
-  const heading = isPaid ? "Payment received." : isPending ? "Confirming your payment." : result.state === "review" ? "Payment received." : "Payment not completed.";
+  const heading = isPaid ? "Payment received." : isPending ? "Confirming your payment." : result.state === "review" ? "Payment needs review." : "Payment not completed.";
   const detail = isPaid
     ? `Order ${result.orderNumber} is confirmed. We will contact you with delivery updates.`
     : result.state === "review"
-      ? `Order ${result.orderNumber} needs a quick stock check before fulfilment. We will contact you shortly.`
+      ? `Order ${result.orderNumber} was received, but the reservation had already expired. We will contact you shortly to resolve the payment.`
       : result.message || "Please return to checkout and try again.";
 
   return <main className="min-h-screen bg-white px-5 py-5 text-[#111111] sm:px-10">

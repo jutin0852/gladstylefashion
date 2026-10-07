@@ -3,6 +3,7 @@ import {
   NewProduct,
   NewProductImage,
   productImages,
+  productVariants,
   products,
 } from "../../schema";
 import { and, asc, desc, eq } from "drizzle-orm";
@@ -15,6 +16,7 @@ export const getAllProducts = async () => {
         orderBy: (image) => [asc(image.displayOrder)],
       },
       category: true,
+      variants: true,
     },
     orderBy: [desc(products.createdAt)],
   });
@@ -27,6 +29,7 @@ export const getAllAdminProducts = async () => {
         orderBy: (image) => [asc(image.displayOrder)],
       },
       category: true,
+      variants: true,
     },
     orderBy: [desc(products.createdAt)],
   });
@@ -38,6 +41,7 @@ export const getAdminProductById = async (id: string) => {
     with: {
       images: { orderBy: (image) => [asc(image.displayOrder)] },
       category: true,
+      variants: true,
     },
   });
 };
@@ -53,14 +57,26 @@ export const getProductBySlug = async (slug: string) => {
         orderBy: (image) => [asc(image.displayOrder)],
       },
       category: true,
+      variants: true,
     },
   });
 };
 
-export async function createProduct(product: NewProduct, images: string[]) {
+export async function createProduct(product: NewProduct, images: string[], variantInventory: Record<string, number> = {}) {
   try {
     // Insert the product first
     const [newProduct] = await db.insert(products).values(product).returning();
+
+    const sizes = product.sizes?.length ? product.sizes : ["ONE_SIZE"];
+    await db.insert(productVariants).values(
+      sizes.map((size) => ({
+        productId: newProduct.id,
+        size,
+        sku: `${product.sku || `GS-${newProduct.id}`}-${size.toUpperCase().replace(/[^A-Z0-9]+/g, "-")}`,
+        inventoryCount: product.sizes?.length ? Math.max(0, variantInventory[size] ?? 0) : product.inventoryCount ?? 0,
+        isActive: newProduct.isActive ?? true,
+      })),
+    );
 
     const productImagesArray: NewProductImage[] = images.map((img, i) => {
       return {

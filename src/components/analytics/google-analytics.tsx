@@ -11,11 +11,34 @@ export function GoogleAnalytics() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!measurementId || typeof window === "undefined" || typeof window.gtag !== "function") return;
-
     const query = searchParams?.toString();
     const pagePath = query ? `${pathname}?${query}` : pathname;
-    window.gtag("config", measurementId, { page_path: pagePath });
+
+    if (!measurementId || typeof window === "undefined") return;
+
+    let attempts = 0;
+    let retryTimer: number | undefined;
+
+    const sendPageView = () => {
+      if (typeof window.gtag !== "function") {
+        if (attempts < 20) {
+          attempts += 1;
+          retryTimer = window.setTimeout(sendPageView, 100);
+        }
+        return;
+      }
+
+      window.gtag("event", "page_view", {
+        page_path: pagePath,
+        page_title: document.title,
+      });
+    };
+
+    sendPageView();
+
+    return () => {
+      if (retryTimer) window.clearTimeout(retryTimer);
+    };
   }, [pathname, searchParams]);
 
   if (!measurementId) return null;

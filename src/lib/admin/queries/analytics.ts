@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { orderItems, orders, products, user } from "../../schema";
+import { emailOutbox, orderItems, orders, products, user } from "../../schema";
 
 export type AdminOrder = {
   id: string;
@@ -16,17 +16,19 @@ export type AdminOrder = {
 
 export type AdminAnalytics = {
   cards: {
-    totalSales: number;
+    totalSales: string;
     totalOrders: number;
     customers: number;
     lowStock: number;
+    pendingEmails: number;
+    failedEmails: number;
   };
   chart: { date: string; orders: number; revenue: number }[];
   orders: AdminOrder[];
 };
 
 export async function getAdminAnalytics(): Promise<AdminAnalytics> {
-  const [sales, orderCount, customerCount, lowStock, recentOrders, dailySales] =
+  const [sales, orderCount, customerCount, lowStock, recentOrders, dailySales, emailStatus] =
     await Promise.all([
       db
         .select({ total: sql<string>`coalesce(sum(${orders.totalAmount}), 0)` })
@@ -70,14 +72,22 @@ export async function getAdminAnalytics(): Promise<AdminAnalytics> {
         .where(gte(orders.createdAt, sql`current_date - interval '90 days'`))
         .groupBy(sql`date_trunc('day', ${orders.createdAt})`)
         .orderBy(sql`date_trunc('day', ${orders.createdAt})`),
+      db
+        .select({ status: emailOutbox.status, count: sql<number>`count(*)` })
+        .from(emailOutbox)
+        .groupBy(emailOutbox.status),
     ]);
+
+  const emailCount = (status: string) => Number(emailStatus.find((item) => item.status === status)?.count || 0);
 
   return {
     cards: {
-      totalSales: Number(sales[0]?.total || 0),
+      totalSales: String(sales[0]?.total || "0.00"),
       totalOrders: Number(orderCount[0]?.count || 0),
       customers: Number(customerCount[0]?.count || 0),
       lowStock: Number(lowStock[0]?.count || 0),
+      pendingEmails: emailCount("pending") + emailCount("processing"),
+      failedEmails: emailCount("failed"),
     },
     chart: dailySales.map((item) => ({
       date: item.date,

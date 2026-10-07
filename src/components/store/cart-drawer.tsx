@@ -6,6 +6,7 @@ import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 import { useCart } from "./cart-context";
 import { primaryProductAlt, primaryProductImage } from "./brand-assets";
 import { formatStorePrice } from "./currency";
+import { multiplyNairaDecimal } from "@/lib/money";
 
 type CartDrawerProps = {
   open: boolean;
@@ -72,7 +73,7 @@ export default function CartDrawer({
                         <Link href={`/product/${item.slug}?edit=1&size=${encodeURIComponent(item.size || "")}&quantity=${item.quantity}&color=${encodeURIComponent(item.customizations?.color || "")}&desiredLength=${encodeURIComponent(item.customizations?.desiredLength || "")}&customerHeight=${encodeURIComponent(item.customizations?.customerHeight || "")}&notes=${encodeURIComponent(item.customizations?.notes || "")}`} onClick={onClose} className="mt-2 inline-block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#d3146d] underline">Edit selections</Link>
                       </div>
                       <span className="text-sm">
-                        {formatStorePrice(Number(item.price) * item.quantity)}
+                        {formatStorePrice(multiplyNairaDecimal(item.price, item.quantity))}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-xs">

@@ -6,6 +6,7 @@ import { Menu, Search, ShoppingBag, SlidersHorizontal, UserRound, X } from "luci
 import BrandLogo from "./brand-logo";
 import { primaryProductAlt, primaryProductImage } from "./brand-assets";
 import { formatStorePrice } from "./currency";
+import { parseNairaToKobo } from "@/lib/money";
 import CartDrawer from "./cart-drawer";
 import { useCart, type StoreProduct } from "./cart-context";
 
@@ -48,18 +49,24 @@ export default function Storefront({ products }: { products: StoreProduct[] }) {
         product.description?.toLowerCase().includes(normalizedQuery) ||
         product.category?.name.toLowerCase().includes(normalizedQuery);
       const matchesSize = size === allSizes || product.sizes?.includes(size);
-      const price = Number(product.price);
+      const price = parseNairaToKobo(product.price);
       const matchesPrice =
         priceRange === "all" ||
-        (priceRange === "under-50000" && price < 50000) ||
-        (priceRange === "50000-100000" && price >= 50000 && price <= 100000) ||
-        (priceRange === "over-100000" && price > 100000);
+        (priceRange === "under-50000" && price < BigInt(5000000)) ||
+        (priceRange === "50000-100000" && price >= BigInt(5000000) && price <= BigInt(10000000)) ||
+        (priceRange === "over-100000" && price > BigInt(10000000));
       return matchesCategory && matchesQuery && matchesSize && matchesPrice;
     });
 
     return [...matchingProducts].sort((first, second) => {
-      if (sortOrder === "price-low") return Number(first.price) - Number(second.price);
-      if (sortOrder === "price-high") return Number(second.price) - Number(first.price);
+      if (sortOrder === "price-low") {
+        const difference = parseNairaToKobo(first.price) - parseNairaToKobo(second.price);
+        return difference < BigInt(0) ? -1 : difference > BigInt(0) ? 1 : 0;
+      }
+      if (sortOrder === "price-high") {
+        const difference = parseNairaToKobo(second.price) - parseNairaToKobo(first.price);
+        return difference < BigInt(0) ? -1 : difference > BigInt(0) ? 1 : 0;
+      }
       return 0;
     });
   }, [category, priceRange, products, query, size, sortOrder]);
