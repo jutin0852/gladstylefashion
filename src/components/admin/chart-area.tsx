@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { Area, Bar, CartesianGrid, ComposedChart, XAxis, YAxis } from "recharts";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -27,219 +27,124 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-export const description = "An interactive area chart";
+export const description = "Orders and revenue per day";
 
-const chartData = [
-  { date: "2024-04-01", desktop: 222, mobile: 150 },
-  { date: "2024-04-02", desktop: 97, mobile: 180 },
-  { date: "2024-04-03", desktop: 167, mobile: 120 },
-  { date: "2024-04-04", desktop: 242, mobile: 260 },
-  { date: "2024-04-05", desktop: 373, mobile: 290 },
-  { date: "2024-04-06", desktop: 301, mobile: 340 },
-  { date: "2024-04-07", desktop: 245, mobile: 180 },
-  { date: "2024-04-08", desktop: 409, mobile: 320 },
-  { date: "2024-04-09", desktop: 59, mobile: 110 },
-  { date: "2024-04-10", desktop: 261, mobile: 190 },
-  { date: "2024-04-11", desktop: 327, mobile: 350 },
-  { date: "2024-04-12", desktop: 292, mobile: 210 },
-  { date: "2024-04-13", desktop: 342, mobile: 380 },
-  { date: "2024-04-14", desktop: 137, mobile: 220 },
-  { date: "2024-04-15", desktop: 120, mobile: 170 },
-  { date: "2024-04-16", desktop: 138, mobile: 190 },
-  { date: "2024-04-17", desktop: 446, mobile: 360 },
-  { date: "2024-04-18", desktop: 364, mobile: 410 },
-  { date: "2024-04-19", desktop: 243, mobile: 180 },
-  { date: "2024-04-20", desktop: 89, mobile: 150 },
-  { date: "2024-04-21", desktop: 137, mobile: 200 },
-  { date: "2024-04-22", desktop: 224, mobile: 170 },
-  { date: "2024-04-23", desktop: 138, mobile: 230 },
-  { date: "2024-04-24", desktop: 387, mobile: 290 },
-  { date: "2024-04-25", desktop: 215, mobile: 250 },
-  { date: "2024-04-26", desktop: 75, mobile: 130 },
-  { date: "2024-04-27", desktop: 383, mobile: 420 },
-  { date: "2024-04-28", desktop: 122, mobile: 180 },
-  { date: "2024-04-29", desktop: 315, mobile: 240 },
-  { date: "2024-04-30", desktop: 454, mobile: 380 },
-  { date: "2024-05-01", desktop: 165, mobile: 220 },
-  { date: "2024-05-02", desktop: 293, mobile: 310 },
-  { date: "2024-05-03", desktop: 247, mobile: 190 },
-  { date: "2024-05-04", desktop: 385, mobile: 420 },
-  { date: "2024-05-05", desktop: 481, mobile: 390 },
-  { date: "2024-05-06", desktop: 498, mobile: 520 },
-  { date: "2024-05-07", desktop: 388, mobile: 300 },
-  { date: "2024-05-08", desktop: 149, mobile: 210 },
-  { date: "2024-05-09", desktop: 227, mobile: 180 },
-  { date: "2024-05-10", desktop: 293, mobile: 330 },
-  { date: "2024-05-11", desktop: 335, mobile: 270 },
-  { date: "2024-05-12", desktop: 197, mobile: 240 },
-  { date: "2024-05-13", desktop: 197, mobile: 160 },
-  { date: "2024-05-14", desktop: 448, mobile: 490 },
-  { date: "2024-05-15", desktop: 473, mobile: 380 },
-  { date: "2024-05-16", desktop: 338, mobile: 400 },
-  { date: "2024-05-17", desktop: 499, mobile: 420 },
-  { date: "2024-05-18", desktop: 315, mobile: 350 },
-  { date: "2024-05-19", desktop: 235, mobile: 180 },
-  { date: "2024-05-20", desktop: 177, mobile: 230 },
-  { date: "2024-05-21", desktop: 82, mobile: 140 },
-  { date: "2024-05-22", desktop: 81, mobile: 120 },
-  { date: "2024-05-23", desktop: 252, mobile: 290 },
-  { date: "2024-05-24", desktop: 294, mobile: 220 },
-  { date: "2024-05-25", desktop: 201, mobile: 250 },
-  { date: "2024-05-26", desktop: 213, mobile: 170 },
-  { date: "2024-05-27", desktop: 420, mobile: 460 },
-  { date: "2024-05-28", desktop: 233, mobile: 190 },
-  { date: "2024-05-29", desktop: 78, mobile: 130 },
-  { date: "2024-05-30", desktop: 340, mobile: 280 },
-  { date: "2024-05-31", desktop: 178, mobile: 230 },
-  { date: "2024-06-01", desktop: 178, mobile: 200 },
-  { date: "2024-06-02", desktop: 470, mobile: 410 },
-  { date: "2024-06-03", desktop: 103, mobile: 160 },
-  { date: "2024-06-04", desktop: 439, mobile: 380 },
-  { date: "2024-06-05", desktop: 88, mobile: 140 },
-  { date: "2024-06-06", desktop: 294, mobile: 250 },
-  { date: "2024-06-07", desktop: 323, mobile: 370 },
-  { date: "2024-06-08", desktop: 385, mobile: 320 },
-  { date: "2024-06-09", desktop: 438, mobile: 480 },
-  { date: "2024-06-10", desktop: 155, mobile: 200 },
-  { date: "2024-06-11", desktop: 92, mobile: 150 },
-  { date: "2024-06-12", desktop: 492, mobile: 420 },
-  { date: "2024-06-13", desktop: 81, mobile: 130 },
-  { date: "2024-06-14", desktop: 426, mobile: 380 },
-  { date: "2024-06-15", desktop: 307, mobile: 350 },
-  { date: "2024-06-16", desktop: 371, mobile: 310 },
-  { date: "2024-06-17", desktop: 475, mobile: 520 },
-  { date: "2024-06-18", desktop: 107, mobile: 170 },
-  { date: "2024-06-19", desktop: 341, mobile: 290 },
-  { date: "2024-06-20", desktop: 408, mobile: 450 },
-  { date: "2024-06-21", desktop: 169, mobile: 210 },
-  { date: "2024-06-22", desktop: 317, mobile: 270 },
-  { date: "2024-06-23", desktop: 480, mobile: 530 },
-  { date: "2024-06-24", desktop: 132, mobile: 180 },
-  { date: "2024-06-25", desktop: 141, mobile: 190 },
-  { date: "2024-06-26", desktop: 434, mobile: 380 },
-  { date: "2024-06-27", desktop: 448, mobile: 490 },
-  { date: "2024-06-28", desktop: 149, mobile: 200 },
-  { date: "2024-06-29", desktop: 103, mobile: 160 },
-  { date: "2024-06-30", desktop: 446, mobile: 400 },
-];
+type DayPoint = { date: string; orders: number; revenue: number };
 
 const chartConfig = {
   revenue: {
     label: "Revenue",
-    color: "var(--primary)",
+    color: "#d3146d",
   },
   orders: {
     label: "Orders",
-    color: "var(--primary)",
+    color: "#1d1b2c",
   },
 } satisfies ChartConfig;
 
-export function ChartAreaInteractive({
-  data = chartData.map((item) => ({
-    date: item.date,
-    orders: item.mobile,
-    revenue: item.desktop,
-  })),
-}: {
-  data?: { date: string; orders: number; revenue: number }[];
-}) {
+const RANGES = {
+  "90d": { days: 90, label: "Last 3 months", sentence: "the last 3 months" },
+  "30d": { days: 30, label: "Last 30 days", sentence: "the last 30 days" },
+  "7d": { days: 7, label: "Last 7 days", sentence: "the last 7 days" },
+} as const;
+
+type RangeKey = keyof typeof RANGES;
+
+function dayKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * One point for every day in the range, with zeros on days that had no orders.
+ * Without this the chart only has points on order days, so a quiet store
+ * draws nothing (an area needs at least two points to show a shape).
+ */
+function fillDays(data: DayPoint[], days: number): DayPoint[] {
+  const byDay = new Map(data.map((point) => [point.date, point]));
+  const today = new Date();
+  const points: DayPoint[] = [];
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const day = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - offset));
+    const key = dayKey(day);
+    const found = byDay.get(key);
+    points.push({ date: key, orders: found?.orders ?? 0, revenue: found?.revenue ?? 0 });
+  }
+  return points;
+}
+
+const naira = (value: number) => `₦${Math.round(value).toLocaleString("en-NG")}`;
+const compactNaira = (value: number) =>
+  value >= 1_000_000 ? `₦${+(value / 1_000_000).toFixed(1)}m` : value >= 1000 ? `₦${Math.round(value / 1000)}k` : `₦${value}`;
+
+const formatDay = (value: string) =>
+  new Date(`${value}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
+export function ChartAreaInteractive({ data = [] }: { data?: DayPoint[] }) {
   const isMobile = useIsMobile();
-  const [timeRange, setTimeRange] = React.useState("90d");
+  const [timeRange, setTimeRange] = React.useState<RangeKey>("90d");
 
   React.useEffect(() => {
     if (isMobile) {
-      setTimeRange("7d");
+      setTimeRange("30d");
     }
   }, [isMobile]);
 
-  const filteredData = data.filter((item) => {
-    const date = new Date(item.date);
-    const referenceDate = new Date();
-    let daysToSubtract = 90;
-    if (timeRange === "30d") {
-      daysToSubtract = 30;
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7;
-    }
-    const startDate = new Date(referenceDate);
-    startDate.setDate(startDate.getDate() - daysToSubtract);
-    return date >= startDate;
-  });
+  const range = RANGES[timeRange];
+  const series = React.useMemo(() => fillDays(data, range.days), [data, range.days]);
+  const totals = series.reduce(
+    (sum, point) => ({ orders: sum.orders + point.orders, revenue: sum.revenue + point.revenue }),
+    { orders: 0, revenue: 0 },
+  );
+  const maxOrders = Math.max(1, ...series.map((point) => point.orders));
 
   return (
     <Card className="@container/card rounded-none border-black/15 bg-white shadow-none">
       <CardHeader>
         <CardTitle>Store performance</CardTitle>
         <CardDescription>
-          <span className="hidden @[540px]/card:block">
-            Orders and revenue for the last 3 months
-          </span>
-          <span className="@[540px]/card:hidden">Last 3 months</span>
+          {totals.orders === 0
+            ? `No orders in ${range.sentence}`
+            : `${totals.orders} ${totals.orders === 1 ? "order" : "orders"} · ${naira(totals.revenue)} in ${range.sentence}`}
         </CardDescription>
         <CardAction>
           <ToggleGroup
             type="single"
             value={timeRange}
-            onValueChange={setTimeRange}
+            onValueChange={(value) => value && setTimeRange(value as RangeKey)}
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
           >
-            <ToggleGroupItem value="90d">Last 3 months</ToggleGroupItem>
-            <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
-            <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
+            <ToggleGroupItem value="90d">{RANGES["90d"].label}</ToggleGroupItem>
+            <ToggleGroupItem value="30d">{RANGES["30d"].label}</ToggleGroupItem>
+            <ToggleGroupItem value="7d">{RANGES["7d"].label}</ToggleGroupItem>
           </ToggleGroup>
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Select value={timeRange} onValueChange={(value) => setTimeRange(value as RangeKey)}>
             <SelectTrigger
               className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
               size="sm"
-              aria-label="Select a value"
+              aria-label="Select a time range"
             >
-              <SelectValue placeholder="Last 3 months" />
+              <SelectValue placeholder={RANGES["90d"].label} />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
-              <SelectItem value="90d" className="rounded-lg">
-                Last 3 months
-              </SelectItem>
-              <SelectItem value="30d" className="rounded-lg">
-                Last 30 days
-              </SelectItem>
-              <SelectItem value="7d" className="rounded-lg">
-                Last 7 days
-              </SelectItem>
+              <SelectItem value="90d" className="rounded-lg">{RANGES["90d"].label}</SelectItem>
+              <SelectItem value="30d" className="rounded-lg">{RANGES["30d"].label}</SelectItem>
+              <SelectItem value="7d" className="rounded-lg">{RANGES["7d"].label}</SelectItem>
             </SelectContent>
           </Select>
         </CardAction>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[250px] w-full"
-        >
-          <AreaChart data={filteredData}>
+        <div className="mb-2 flex items-center gap-4 px-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5"><span className="inline-block size-2.5" style={{ background: chartConfig.revenue.color }} />Revenue (₦)</span>
+          <span className="inline-flex items-center gap-1.5"><span className="inline-block size-2.5" style={{ background: chartConfig.orders.color }} />Orders</span>
+        </div>
+        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
+          <ComposedChart data={series} margin={{ left: 0, right: 0 }}>
             <defs>
               <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-revenue)"
-                  stopOpacity={1.0}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-revenue)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-              <linearGradient id="fillOrders" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-orders)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-orders)"
-                  stopOpacity={0.1}
-                />
+                <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.55} />
+                <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.05} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />
@@ -248,45 +153,58 @@ export function ChartAreaInteractive({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value);
-                return date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                });
-              }}
+              minTickGap={28}
+              tickFormatter={formatDay}
+            />
+            <YAxis
+              yAxisId="revenue"
+              tickLine={false}
+              axisLine={false}
+              width={44}
+              tickMargin={4}
+              tickFormatter={compactNaira}
+              domain={[0, (max: number) => Math.max(max, 50000)]}
+            />
+            <YAxis
+              yAxisId="orders"
+              orientation="right"
+              tickLine={false}
+              axisLine={false}
+              width={28}
+              tickMargin={4}
+              allowDecimals={false}
+              domain={[0, Math.max(maxOrders, 3)]}
             />
             <ChartTooltip
               cursor={false}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    });
-                  }}
+                  labelFormatter={(value) => formatDay(String(value))}
                   indicator="dot"
+                  formatter={(value, name) => (
+                    <div className="flex w-full items-center justify-between gap-4">
+                      <span className="text-muted-foreground">{name === "revenue" ? "Revenue" : "Orders"}</span>
+                      <span className="font-mono font-medium tabular-nums">{name === "revenue" ? naira(Number(value)) : String(value)}</span>
+                    </div>
+                  )}
                 />
               }
             />
             <Area
-              dataKey="orders"
-              type="natural"
-              fill="url(#fillOrders)"
-              stroke="var(--color-orders)"
-              stackId="a"
-            />
-            <Area
+              yAxisId="revenue"
               dataKey="revenue"
-              type="natural"
+              type="monotone"
               fill="url(#fillRevenue)"
               stroke="var(--color-revenue)"
-              stackId="a"
+              strokeWidth={2}
+              dot={false}
             />
-          </AreaChart>
+            <Bar yAxisId="orders" dataKey="orders" fill="var(--color-orders)" radius={[2, 2, 0, 0]} maxBarSize={14} />
+          </ComposedChart>
         </ChartContainer>
+        {totals.orders === 0 && (
+          <p className="px-2 pt-3 text-center text-sm text-muted-foreground">Orders and revenue will show here as soon as the first order comes in.</p>
+        )}
       </CardContent>
     </Card>
   );
