@@ -261,6 +261,99 @@ export const orderItems = pgTable("order_items", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Owner-issued invoices for custom garment work. Whole-naira amounts, edited
+// freely (even after sending) until voided; payments are recorded manually.
+export const documentCounters = pgTable("document_counters", {
+  kind: text("kind").primaryKey(), // invoice, receipt
+  lastNumber: integer("last_number").notNull().default(0),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const invoices = pgTable("invoices", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  invoiceNumber: integer("invoice_number").notNull().unique(),
+  customerName: text("customer_name").notNull(),
+  customerPhone: text("customer_phone"),
+  customerEmail: text("customer_email"),
+  invoiceDate: timestamp("invoice_date").notNull().defaultNow(),
+  status: text("status").notNull().default("draft"), // draft, sent, void
+  notes: text("notes"),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  createdByUserId: text("created_by_user_id").references(() => user.id),
+  voidedAt: timestamp("voided_at"),
+  voidReason: text("void_reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("invoices_created_idx").on(table.createdAt),
+  index("invoices_customer_name_idx").on(table.customerName),
+]);
+
+// A garment (e.g. one dress) on an invoice; its items are what that garment needs.
+export const invoiceSections = pgTable("invoice_sections", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  invoiceId: text("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),
+  position: integer("position").notNull(),
+  title: text("title"),
+}, (table) => [
+  index("invoice_sections_invoice_idx").on(table.invoiceId, table.position),
+]);
+
+export const invoiceItems = pgTable("invoice_items", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  invoiceId: text("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),
+  sectionId: text("section_id").notNull().references(() => invoiceSections.id, { onDelete: "cascade" }),
+  position: integer("position").notNull(),
+  description: text("description").notNull(),
+  quantity: integer("quantity"),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+}, (table) => [
+  index("invoice_items_invoice_idx").on(table.invoiceId, table.position),
+  index("invoice_items_section_idx").on(table.sectionId, table.position),
+]);
+
+// One row per payment received. Each payment is also a numbered receipt.
+export const invoicePayments = pgTable("invoice_payments", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  invoiceId: text("invoice_id").notNull().references(() => invoices.id, { onDelete: "restrict" }),
+  receiptNumber: integer("receipt_number").notNull().unique(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  paidAt: timestamp("paid_at").notNull().defaultNow(),
+  method: text("method").notNull(), // cash, transfer, cheque, pos, other
+  bank: text("bank"),
+  chequeNumber: text("cheque_number"),
+  receivedFrom: text("received_from").notNull(),
+  beingPaymentFor: text("being_payment_for").notNull(),
+  balanceAfter: decimal("balance_after", { precision: 12, scale: 2 }).notNull(),
+  recordedByUserId: text("recorded_by_user_id").references(() => user.id),
+  voidedAt: timestamp("voided_at"),
+  voidReason: text("void_reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("invoice_payments_invoice_idx").on(table.invoiceId, table.paidAt),
+  check("invoice_payments_amount_positive", sql`${table.amount} > 0`),
+]);
+
+export const invoicesRelations = relations(invoices, ({ many }) => ({
+  sections: many(invoiceSections),
+  items: many(invoiceItems),
+  payments: many(invoicePayments),
+}));
+
+export const invoiceSectionsRelations = relations(invoiceSections, ({ one, many }) => ({
+  invoice: one(invoices, { fields: [invoiceSections.invoiceId], references: [invoices.id] }),
+  items: many(invoiceItems),
+}));
+
+export const invoiceItemsRelations = relations(invoiceItems, ({ one }) => ({
+  invoice: one(invoices, { fields: [invoiceItems.invoiceId], references: [invoices.id] }),
+  section: one(invoiceSections, { fields: [invoiceItems.sectionId], references: [invoiceSections.id] }),
+}));
+
+export const invoicePaymentsRelations = relations(invoicePayments, ({ one }) => ({
+  invoice: one(invoices, { fields: [invoicePayments.invoiceId], references: [invoices.id] }),
+}));
+
 // User Relations
 export const userRelations = relations(user, ({ many }) => ({
   orders: many(orders), // One user can have many orders
@@ -349,3 +442,8 @@ export type Account = typeof account.$inferSelect;
 export type NewAccount = typeof account.$inferInsert;
 export type Verification = typeof verification.$inferSelect;
 export type NewVerification = typeof verification.$inferInsert;
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InvoiceSection = typeof invoiceSections.$inferSelect;
+export type InvoiceItem = typeof invoiceItems.$inferSelect;
+export type InvoicePayment = typeof invoicePayments.$inferSelect;

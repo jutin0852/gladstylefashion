@@ -1,12 +1,20 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import "./globals.css";
 import { CartProvider } from "../components/store/cart-context";
 import { getSiteUrl } from "@/lib/site-url";
 import { GoogleAnalytics } from "../components/analytics/google-analytics";
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#ffffff",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
+  appleWebApp: { capable: true, title: "Glad Style", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
   alternates: { canonical: "/" },
   title: {
     default: "Glad Style Fashion | Ready-to-wear fashion",
@@ -45,8 +53,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased" suppressHydrationWarning>
         <Suspense fallback={null}>
           <GoogleAnalytics />
         </Suspense>

@@ -7,6 +7,7 @@ import {
   IconPhoto,
   IconPackages,
   IconMessageStar,
+  IconReceipt,
 } from "@tabler/icons-react";
 
 export const adminNav = {
@@ -20,6 +21,11 @@ export const adminNav = {
       title: "Orders",
       url: "/admin/orders",
       icon: IconShoppingCart,
+    },
+    {
+      title: "Invoices",
+      url: "/admin/invoices",
+      icon: IconReceipt,
     },
     {
       title: "Customers",
