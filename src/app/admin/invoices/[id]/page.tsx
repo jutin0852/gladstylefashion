@@ -7,14 +7,14 @@ import { formatStorePrice } from "@/components/store/currency";
 import { InvoiceSheet } from "@/components/invoice/invoice-document";
 import { ExportButtons } from "@/components/invoice/export-buttons";
 import { FitToWidth } from "@/components/invoice/fit-to-width";
-import { InvoiceStatusControls, VoidReceiptButton } from "@/components/admin/invoice-controls";
+import { DeleteInvoiceButton, InvoiceStatusControls, VoidReceiptButton } from "@/components/admin/invoice-controls";
 import { PaymentForm } from "@/components/admin/payment-form";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const { id } = await params;
   const detail = await getInvoiceDetail(id);
   if (!detail) notFound();
@@ -44,6 +44,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <InvoiceStatusControls invoiceId={id} status={invoice.status} canVoid={!hasLivePayments} />
+      {admin.role === "owner" && <DeleteInvoiceButton invoiceId={id} invoiceNumber={number} receiptCount={payments.length} />}
 
       <div className="space-y-3">
         <h2 className="font-semibold">Send to customer</h2>

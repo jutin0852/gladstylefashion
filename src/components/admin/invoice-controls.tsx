@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { markInvoiceSent, voidInvoice, voidPayment } from "@/app/actions/invoices";
+import { deleteInvoice, markInvoiceSent, voidInvoice, voidPayment } from "@/app/actions/invoices";
 import { Button } from "@/components/ui/button";
 
 type ActionResult = { success: boolean; message: string };
@@ -65,5 +65,32 @@ export function VoidReceiptButton({ paymentId }: { paymentId: string }) {
       </button>
       {message && <span className="text-xs text-red-600">{message}</span>}
     </span>
+  );
+}
+
+export function DeleteInvoiceButton({ invoiceId, invoiceNumber, receiptCount }: { invoiceId: string; invoiceNumber: string; receiptCount: number }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState("");
+
+  function remove() {
+    const receipts = receiptCount > 0 ? ` and its ${receiptCount} receipt${receiptCount === 1 ? "" : "s"}` : "";
+    if (!window.confirm(`Delete invoice ${invoiceNumber}${receipts}?\n\nThis permanently removes it and cannot be undone.`)) return;
+    setMessage("");
+    startTransition(async () => {
+      const result = await deleteInvoice(invoiceId);
+      if (!result.success) return setMessage(result.message);
+      router.push("/admin/invoices");
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button type="button" variant="outline" disabled={pending} onClick={remove} className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800">
+        {pending ? "Deleting..." : "Delete invoice"}
+      </Button>
+      {message && <p role="alert" className="text-sm text-red-700">{message}</p>}
+    </div>
   );
 }

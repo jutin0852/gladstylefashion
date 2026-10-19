@@ -2,7 +2,7 @@
 
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin, requireOwner } from "@/lib/admin-auth";
 import { transactionDb } from "@/lib/transaction-db";
 import { documentCounters, invoiceItems, invoicePayments, invoiceSections, invoices } from "@/lib/schema";
 import { formatDocumentNumber, normalizeAmount, summarizeInvoice } from "@/lib/invoice-math";
@@ -231,6 +231,30 @@ export async function voidPayment(paymentId: string, reason: string): Promise<Re
     });
     refresh(invoiceId);
     return { success: true, message: "Receipt voided." };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * Permanently deletes an invoice together with its items and receipts.
+ * Owner only: receipts are money records, so staff can void but not erase them.
+ * Receipt and invoice numbers already used are not handed out again.
+ */
+export async function deleteInvoice(invoiceId: string): Promise<Result> {
+  await requireOwner();
+  try {
+    const removedReceipts = await transactionDb.transaction(async (tx) => {
+      const [invoice] = await tx.select({ id: invoices.id }).from(invoices).where(eq(invoices.id, invoiceId)).for("update");
+      if (!invoice) throw new Error("Invoice not found.");
+      // Receipts are protected by a restrict rule, so they go first.
+      const removed = await tx.delete(invoicePayments).where(eq(invoicePayments.invoiceId, invoiceId)).returning({ id: invoicePayments.id });
+      // Sections and items are removed with the invoice (cascade).
+      await tx.delete(invoices).where(eq(invoices.id, invoiceId));
+      return removed.length;
+    });
+    refresh();
+    return { success: true, message: removedReceipts > 0 ? `Invoice and ${removedReceipts} receipt${removedReceipts === 1 ? "" : "s"} deleted.` : "Invoice deleted." };
   } catch (error) {
     return fail(error);
   }
